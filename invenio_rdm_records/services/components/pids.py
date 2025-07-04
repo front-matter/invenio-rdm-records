@@ -289,27 +289,28 @@ class ParentPIDsComponent(ServiceComponent):
         print("record.parent", record.parent)
         print("current_pids", current_pids)
         missing_required_schemes = required_schemes - current_schemes
-        pids = self.service.pids.parent_pid_manager.create_all(
-            record.parent,
-            pids=current_pids,
-            schemes=missing_required_schemes,
-        )
-        # Reserve all created PIDs and store them on the parent record
-        self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
-        record.parent.pids = pids
-
-        # TODO: This should normally be done in `Service.publish`
-        self.uow.register(
-            ParentRecordCommitOp(
-                record.parent, indexer_context=dict(service=self.service)
+        if current_pids != {}:
+            pids = self.service.pids.parent_pid_manager.create_all(
+                record.parent,
+                pids=current_pids,
+                schemes=missing_required_schemes,
             )
-        )
+            # Reserve all created PIDs and store them on the parent record
+            self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
+            record.parent.pids = pids
 
-        # Async register/update tasks after transaction commit.
-        for scheme in pids.keys():
+            # TODO: This should normally be done in `Service.publish`
             self.uow.register(
-                TaskOp(register_or_update_pid, record["id"], scheme, parent=True)
+                ParentRecordCommitOp(
+                    record.parent, indexer_context=dict(service=self.service)
+                )
             )
+
+            # Async register/update tasks after transaction commit.
+            for scheme in pids.keys():
+                self.uow.register(
+                    TaskOp(register_or_update_pid, record["id"], scheme, parent=True)
+                )
 
     def delete_record(self, identity, data=None, record=None, uow=None):
         """Process pids on delete record."""
