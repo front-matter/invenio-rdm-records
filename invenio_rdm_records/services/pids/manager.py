@@ -30,7 +30,7 @@ class PIDManager:
         """Get a provider."""
         providers = self._providers.get(scheme, {})
         if not provider_name:
-            provider_name = providers["default"]  # mandatory default
+            provider_name = providers.get("default", {})  # mandatory default
         try:
             return providers[provider_name]
         except KeyError:

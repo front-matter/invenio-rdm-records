@@ -283,6 +283,11 @@ class ParentPIDsComponent(ServiceComponent):
         # TODO: Maybe here we can check so that we don't create a Concept DOI for
         #       already published records that don't have one (i.e. legacy records).
         # Create all missing PIDs (this happens only on first publish)
+        print("required_schemes", required_schemes)
+        print("current_schemes", current_schemes)
+        print("missing_required_schemes", required_schemes - current_schemes)
+        print("record.parent", record.parent)
+        print("current_pids", current_pids)
         missing_required_schemes = required_schemes - current_schemes
         pids = self.service.pids.parent_pid_manager.create_all(
             record.parent,
