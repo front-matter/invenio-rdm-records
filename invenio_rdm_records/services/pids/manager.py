@@ -28,6 +28,7 @@ class PIDManager:
 
     def _get_provider(self, scheme, provider_name=None):
         """Get a provider."""
+        print(self._providers, scheme, provider_name)
         providers = self._providers[scheme]
         if not provider_name:
             provider_name = providers["default"]  # mandatory default
@@ -247,10 +248,7 @@ class PIDManager:
         if not provider.can_modify(pid) and not soft_delete:
             raise ValidationError(
                 message=[
-                    _(
-                        "Cannot discard a reserved or registered persistent "
-                        "identifier."
-                    ),
+                    _("Cannot discard a reserved or registered persistent identifier."),
                 ],
                 field_name=f"pids.{scheme}",
             )
