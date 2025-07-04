@@ -28,9 +28,6 @@ class PIDManager:
 
     def _get_provider(self, scheme, provider_name=None):
         """Get a provider."""
-        print(self._providers)
-        print(scheme)
-        print(provider_name)
         providers = self._providers.get(scheme, {})
         if not provider_name:
             provider_name = providers["default"]  # mandatory default
@@ -42,19 +39,18 @@ class PIDManager:
     def _get_providers(self, pids):
         """Get all providers."""
         schemes = set(pids.keys()) | set(self._required_schemes)
-        print(schemes)
         scheme_provider_names = [
             # provider_name for an absent-but-required pid will be None which will
             # in turn select the default provider below
             (scheme, pids.get(scheme, {}).get("provider"))
             for scheme in schemes
         ]
-        print(scheme_provider_names)
+
         provider_pid_dicts = [
             (self._get_provider(scheme, provider_name), pids.get(scheme, {}))
             for scheme, provider_name in scheme_provider_names
         ]
-        print(provider_pid_dicts)
+        print("_get_providers", schemes, scheme_provider_names, provider_pid_dicts)
         return provider_pid_dicts
 
     def _validate_pids_schemes(self, pids):
