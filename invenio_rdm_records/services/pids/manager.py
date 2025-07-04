@@ -31,7 +31,7 @@ class PIDManager:
         print(self._providers)
         print(scheme)
         print(provider_name)
-        providers = self._providers[scheme]
+        providers = self._providers.get(scheme, {})
         if not provider_name:
             provider_name = providers["default"]  # mandatory default
         try:
