@@ -28,7 +28,9 @@ class PIDManager:
 
     def _get_provider(self, scheme, provider_name=None):
         """Get a provider."""
-        print(self._providers, scheme, provider_name)
+        print(self._providers)
+        print(scheme)
+        print(provider_name)
         providers = self._providers[scheme]
         if not provider_name:
             provider_name = providers["default"]  # mandatory default
