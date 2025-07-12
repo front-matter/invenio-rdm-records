@@ -269,7 +269,8 @@ class ParentPIDsComponent(ServiceComponent):
         # Check if a doi was added in the draft and create a parent DOI independently if
         # doi is required.
         if draft.get("pids", {}).get("doi"):
-            required_schemes.add("doi")
+            if "doi" in current_app.config["RDM_PARENT_PERSISTENT_IDENTIFIERS"]:
+                required_schemes.add("doi")
 
         # Note: we don't have explicitly to check for minting a parent DOI only for the
         # managed provider because we pass a `condition_func` below that it omits the
@@ -283,34 +284,28 @@ class ParentPIDsComponent(ServiceComponent):
         # TODO: Maybe here we can check so that we don't create a Concept DOI for
         #       already published records that don't have one (i.e. legacy records).
         # Create all missing PIDs (this happens only on first publish)
-        print("required_schemes", required_schemes)
-        print("current_schemes", current_schemes)
-        print("missing_required_schemes", required_schemes - current_schemes)
-        print("record.parent", record.parent)
-        print("current_pids", current_pids)
         missing_required_schemes = required_schemes - current_schemes
-        if current_pids != {}:
-            pids = self.service.pids.parent_pid_manager.create_all(
-                record.parent,
-                pids=current_pids,
-                schemes=missing_required_schemes,
-            )
-            # Reserve all created PIDs and store them on the parent record
-            self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
-            record.parent.pids = pids
+        pids = self.service.pids.parent_pid_manager.create_all(
+            record.parent,
+            pids=current_pids,
+            schemes=missing_required_schemes,
+        )
+        # Reserve all created PIDs and store them on the parent record
+        self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
+        record.parent.pids = pids
 
-            # TODO: This should normally be done in `Service.publish`
+        # TODO: This should normally be done in `Service.publish`
+        self.uow.register(
+            ParentRecordCommitOp(
+                record.parent, indexer_context=dict(service=self.service)
+            )
+        )
+
+        # Async register/update tasks after transaction commit.
+        for scheme in pids.keys():
             self.uow.register(
-                ParentRecordCommitOp(
-                    record.parent, indexer_context=dict(service=self.service)
-                )
+                TaskOp(register_or_update_pid, record["id"], scheme, parent=True)
             )
-
-            # Async register/update tasks after transaction commit.
-            for scheme in pids.keys():
-                self.uow.register(
-                    TaskOp(register_or_update_pid, record["id"], scheme, parent=True)
-                )
 
     def delete_record(self, identity, data=None, record=None, uow=None):
         """Process pids on delete record."""
