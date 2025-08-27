@@ -24,6 +24,10 @@ MARSHMALLOW_MAP = {
 
 log = logging.getLogger(__name__)
 
+
+class CrossrefXMLSerializer(MarshmallowSerializer):
+    """JSON based Crossref XML serializer for records."""
+
     def __init__(self, **options):
         """Constructor."""
         super().__init__(
