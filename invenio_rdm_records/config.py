@@ -367,6 +367,12 @@ RDM_PERSISTENT_IDENTIFIER_PROVIDERS = [
         client=providers.DataCiteClient("datacite", config_prefix="DATACITE"),
         label=_("DOI"),
     ),
+    # Crossref DOI provider
+    providers.CrossrefPIDProvider(
+        "crossref",
+        client=providers.CrossrefClient("crossref", config_prefix="CROSSREF"),
+        label=_("DOI"),
+    ),
     # DOI provider for externally managed DOIs
     providers.ExternalPIDProvider(
         "external",
@@ -491,6 +497,26 @@ DATACITE_DATACENTER_SYMBOL = ""
 This is only required if you want your records to be harvestable (OAI-PMH)
 in DataCite XML format.
 """
+
+# Configuration for the CrossrefClient used by the CrossrefPIDProvider
+
+CROSSREF_ENABLED = False
+"""Flag to enable/disable DOI registration."""
+
+CROSSREF_USERNAME = ""
+"""Crossref username."""
+
+CROSSREF_PASSWORD = ""
+"""Crossref password."""
+
+CROSSREF_PREFIX = ""
+"""Crossref DOI prefix."""
+
+CROSSREF_TEST_MODE = False
+"""Crossref test mode enabled."""
+
+CROSSREF_FORMAT = DATACITE_FORMAT
+"""Crossref DOI format is the same as DataCite format."""
 
 #
 # Custom fields

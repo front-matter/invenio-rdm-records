@@ -52,6 +52,7 @@ from .deserializers.errors import DeserializerError
 from .errors import HTTPJSONException, HTTPJSONValidationWithMessageAsListException
 from .serializers import (
     BibtexSerializer,
+    CrossrefXMLSerializer,
     CSLJSONSerializer,
     CSVRecordSerializer,
     DataCite43JSONSerializer,
@@ -115,6 +116,9 @@ record_serializers = {
     ),
     "application/vnd.inveniordm.v1+json": ResponseHandler(
         UIJSONSerializer(), headers=etag_headers
+    ),
+    "application/vnd.crossref.unixref+xml": ResponseHandler(
+        CrossrefXMLSerializer(), headers=etag_headers
     ),
     "application/vnd.citationstyles.csl+json": ResponseHandler(
         CSLJSONSerializer(), headers=etag_headers
