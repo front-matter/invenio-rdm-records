@@ -24,9 +24,7 @@ MARSHMALLOW_MAP = {
 }
 
 logger = logging.getLogger(__name__)
-# Set debug level from environment variable or default to INFO
-log_level = os.getenv("CROSSREF_SERIALIZER_LOG_LEVEL", "INFO").upper()
-logger.setLevel(getattr(logging, log_level, logging.INFO))
+logger.setLevel(getattr(logging, logging.INFO))
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -38,7 +36,6 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
             format_serializer_cls=SimpleSerializer,
             object_schema_cls=CrossrefXMLSchema,
             list_schema_cls=BaseListSchema,
-            encoder=self.crossref_xml_tostring,
             **options,
         )
 
@@ -48,8 +45,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         :param record: Record instance.
         """
 
-        logger.debug("Processing record for Crossref XML: %s", record.get("id"))
-
+        # Convert the metadata to crossref_xml format
         metadata = Metadata(record, via="inveniordm")
         data = convert_crossref_xml(metadata)
         if data is None:
@@ -63,15 +59,6 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         # Ensure consistent field ordering through the defined mapping
         field_order = [MARSHMALLOW_MAP.get(k, k) for k in list(data.keys())]
         crossref_xml = {k: crossref_xml[k] for k in field_order if k in crossref_xml}
+
+        # Convert the dict to a Crossref XML string
         return unparse_xml(crossref_xml, dialect="crossref")
-
-    @classmethod
-    def crossref_xml_tostring(cls, record):
-        """Serialize dict to a Crossref XML record."""
-        logger.debug("Converting record to XML string: %s", record.get("id", "unknown"))
-
-        try:
-            return unparse_xml(record, dialect="crossref")
-        except Exception as e:
-            logger.error("Failed to convert record to XML string: %s", str(e))
-            raise
