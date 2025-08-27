@@ -11,7 +11,7 @@
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
-from commonmeta import CrossrefXMLSchema
+from commonmeta import CrossrefXMLSchema, Metadata, write_crossref_xml
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -30,4 +30,6 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
     @classmethod
     def crossref_xml_tostring(cls, record):
         """Stringify a Crossref XML record."""
-        return record
+        print(record)
+        metadata = Metadata(record, via="inveniordm")
+        return write_crossref_xml(metadata)
