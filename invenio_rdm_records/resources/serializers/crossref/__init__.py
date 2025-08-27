@@ -12,15 +12,15 @@ import logging
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
-from commonmeta import CrossrefXMLSchema, Metadata, unparse_xml, convert_crossref_xml
+from commonmeta import (
+    CrossrefXMLSchema,
+    Metadata,
+    unparse_xml,
+    convert_crossref_xml,
+    MARSHMALLOW_MAP,
+)
 
-MARSHMALLOW_MAP = {
-    "abstracts": "jats:abstract",
-    "license": "ai:program",
-    "funding_references": "fr:program",
-    "relations": "rel:program",
-    "references": "citation_list",
-}
+log = logging.getLogger(__name__)
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -46,7 +46,6 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         metadata = Metadata(record, via="inveniordm")
         data = convert_crossref_xml(metadata)
         if data is None:
-            log = logging.getLogger(__name__)
             log.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
             return None
 
@@ -58,7 +57,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         field_order = [MARSHMALLOW_MAP.get(k, k) for k in list(data.keys())]
         crossref_xml = {k: crossref_xml[k] for k in field_order if k in crossref_xml}
 
-        # Convert the dict to a Crossref XML string
+        # Convert the dict to Crossref XML
         return unparse_xml(crossref_xml, dialect="crossref")
 
     @classmethod
