@@ -25,4 +25,11 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
             object_schema_cls=CrossrefXMLSchema,
             list_schema_cls=BaseListSchema,
             schema_kwargs={"dumpers": [JournalCrossrefDumper()]},  # Order matters
+            encoder=self.crossref_xml_tostring,
+            **options,
         )
+
+    @classmethod
+    def crossref_xml_tostring(cls, record):
+        """Stringify a Crossref XML record."""
+        return record
