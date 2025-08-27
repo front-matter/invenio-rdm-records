@@ -34,6 +34,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
             format_serializer_cls=SimpleSerializer,
             object_schema_cls=CrossrefXMLSchema,
             list_schema_cls=BaseListSchema,
+            encoder=self.crossref_xml_tostring,
             **options,
         )
 
@@ -60,3 +61,8 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
 
         # Convert the dict to a Crossref XML string
         return unparse_xml(crossref_xml, dialect="crossref")
+
+    @classmethod
+    def crossref_xml_tostring(cls, record):
+        """Stringify a Crossref XML record."""
+        return record
