@@ -129,7 +129,7 @@ record_serializers = {
     "application/vnd.datacite.datacite+xml": ResponseHandler(
         DataCite43XMLSerializer(), headers=etag_headers
     ),
-    "application/vnd.crossref.unixref+xml": ResponseHandler(
+    "application/vnd.crossref.unixsd+xml": ResponseHandler(
         CrossrefXMLSerializer(), headers=etag_headers
     ),
     f'application/ld+json;profile="{DATAPACKAGE_PROFILE}"': ResponseHandler(
