@@ -9,7 +9,6 @@
 """Crossref Serializers for Invenio RDM Records."""
 
 import logging
-import os
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
@@ -23,8 +22,7 @@ MARSHMALLOW_MAP = {
     "references": "citation_list",
 }
 
-logger = logging.getLogger(__name__)
-logger.setLevel(getattr(logging, logging.INFO))
+log = logging.getLogger(__name__)
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -49,7 +47,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         metadata = Metadata(record, via="inveniordm")
         data = convert_crossref_xml(metadata)
         if data is None:
-            logger.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
+            log.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
             return None
 
         # Use the marshmallow schema to dump the data
