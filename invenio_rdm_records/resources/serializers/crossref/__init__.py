@@ -22,8 +22,6 @@ MARSHMALLOW_MAP = {
     "references": "citation_list",
 }
 
-log = logging.getLogger(__name__)
-
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
     """JSON based Crossref XML serializer for records."""
@@ -48,6 +46,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         metadata = Metadata(record, via="inveniordm")
         data = convert_crossref_xml(metadata)
         if data is None:
+            log = logging.getLogger(__name__)
             log.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
             return None
 
