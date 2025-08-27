@@ -8,10 +8,19 @@
 
 """Crossref Serializers for Invenio RDM Records."""
 
+import logging
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
-from commonmeta import CrossrefXMLSchema, Metadata, write_crossref_xml
+from commonmeta import CrossrefXMLSchema, Metadata, unparse_xml, convert_crossref_xml
+
+MARSHMALLOW_MAP = {
+    "abstracts": "jats:abstract",
+    "license": "ai:program",
+    "funding_references": "fr:program",
+    "relations": "rel:program",
+    "references": "citation_list",
+}
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -27,9 +36,32 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
             **options,
         )
 
+    def serialize_object(self, record):
+        """Serialize a single record.
+
+        :param record: Record instance.
+        """
+
+        logger = logging.getLogger(__name__)
+        logger.debug("Processing record for Crossref XML: %s", record.get("id"))
+
+        metadata = Metadata(record, via="inveniordm")
+        data = convert_crossref_xml(metadata)
+        if data is None:
+            logger.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
+            return None
+
+        # Use the marshmallow schema to dump the data
+        schema = CrossrefXMLSchema()
+        crossref_xml = schema.dump(data)
+
+        # Ensure consistent field ordering through the defined mapping
+        field_order = [MARSHMALLOW_MAP.get(k, k) for k in list(data.keys())]
+        crossref_xml = {k: crossref_xml[k] for k in field_order if k in crossref_xml}
+        return crossref_xml
+
     @classmethod
     def crossref_xml_tostring(cls, record):
-        """Stringify a Crossref XML record."""
-        print(record)
-        metadata = Metadata(record, via="inveniordm")
-        return write_crossref_xml(metadata)
+        """Serialize dict to a Crossref XML record."""
+
+        return unparse_xml(record, dialect="crossref")
