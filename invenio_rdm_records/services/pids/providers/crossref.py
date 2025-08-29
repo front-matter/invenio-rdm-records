@@ -59,10 +59,7 @@ class CrossrefClient:
             return doi_format.format(prefix=prefix, id=record.pid.pid_value)
 
     def check_credentials(self, **kwargs):
-        """Returns if the client has the credentials properly set up.
-
-        If the client is running on test mode the credentials are not required.
-        """
+        """Returns if the client has the credentials properly set up."""
         if not (self.cfg("username") and self.cfg("password") and self.cfg("prefix")):
             warnings.warn(
                 f"The {self.__class__.__name__} is misconfigured. Please "
@@ -79,6 +76,8 @@ class CrossrefClient:
             self._api = CrossrefXMLClient(
                 self.cfg("username"),
                 self.cfg("password"),
+                self.cfg("prefix"),
+                self.cfg("test_mode", False),
             )
         return self._api
 
