@@ -57,8 +57,14 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         field_order = [MARSHMALLOW_MAP.get(k, k) for k in list(data.keys())]
         crossref_xml = {k: crossref_xml[k] for k in field_order if k in crossref_xml}
 
+        head = {
+            "depositor": metadata.depositor,
+            "email": metadata.email,
+            "registrant": metadata.registrant,
+        }
+
         # Convert the dict to Crossref XML
-        return unparse_xml(crossref_xml, dialect="crossref")
+        return unparse_xml(crossref_xml, dialect="crossref", head=head)
 
     @classmethod
     def crossref_xml_tostring(cls, record):
