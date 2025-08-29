@@ -16,7 +16,6 @@ from json import JSONDecodeError
 from commonmeta import (
     CrossrefError,
     CrossrefNoContentError,
-    CrossrefNotFoundError,
     CrossrefServerError,
     CrossrefXMLClient,
 )
@@ -37,7 +36,6 @@ class CrossrefClient:
         self.name = name
         self._config_prefix = config_prefix or "CROSSREF"
         self._config_overrides = config_overrides or {}
-        self._api = None
 
     def cfgkey(self, key):
         """Generate a configuration key."""
@@ -81,8 +79,6 @@ class CrossrefClient:
             self._api = CrossrefXMLClient(
                 self.cfg("username"),
                 self.cfg("password"),
-                self.cfg("prefix"),
-                self.cfg("test_mode", True),
             )
         return self._api
 
@@ -90,9 +86,8 @@ class CrossrefClient:
 class CrossrefPIDProvider(PIDProvider):
     """Crossref Provider class.
 
-    Note that Crossref is only contacted when a DOI is reserved or
-    registered, or any action posterior to it. Its creation happens
-    only at PIDStore level.
+    Note that Crossref is only contacted when a DOI is registered, or any action
+    posterior to it. Its creation happens only at the PIDStore level.
     """
 
     def __init__(
@@ -155,7 +150,7 @@ class CrossrefPIDProvider(PIDProvider):
         return not pid.is_registered() and not pid.is_reserved()
 
     def register(self, pid, record, **kwargs):
-        """Register a DOI via the Crossref XML API.
+        """Register metadata with the Crossref XML API.
 
         :param pid: the PID to register.
         :param record: the record metadata for the DOI.
@@ -173,8 +168,7 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
-            url = kwargs["url"]
-            self.client.api.public_doi(metadata=doc, url=url, doi=pid.pid_value)
+            self.client.api.post(doc)
             return True
         except CrossrefError as e:
             current_app.logger.warning(
@@ -183,40 +177,6 @@ class CrossrefPIDProvider(PIDProvider):
             self._log_errors(e)
 
             return False
-
-    def update(self, pid, record, url=None, **kwargs):
-        """Update metadata associated with a DOI.
-
-        This can be called before/after a DOI is registered.
-        :param pid: the PID to register.
-        :param record: the record metadata for the DOI.
-        :returns: `True` if is updated successfully.
-        """
-        hide = False
-        if isinstance(record, ChainObject):
-            if record._child["access"]["record"] == "restricted":
-                hide = True
-        elif record["access"]["record"] == "restricted":
-            hide = True
-
-        try:
-            if hide:
-                self.client.api.hide_doi(doi=pid.pid_value)
-            else:
-                doc = self.serializer.dump_obj(record)
-                self.client.api.update_doi(metadata=doc, doi=pid.pid_value, url=url)
-        except CrossrefError as e:
-            current_app.logger.warning(
-                f"Crossref provider error when updating DOI for {pid.pid_value}"
-            )
-            self._log_errors(e)
-
-            return False
-
-        if pid.is_deleted():
-            return pid.sync_status(PIDStatus.REGISTERED)
-
-        return True
 
     def validate(self, record, identifier=None, provider=None, **kwargs):
         """Validate the attributes of the identifier.
@@ -228,18 +188,6 @@ class CrossrefPIDProvider(PIDProvider):
         """
         # success is unused, but naming it _ would interfere with lazy_gettext as _
         success, errors = super().validate(record, identifier, provider, **kwargs)
-
-        # Validate identifier
-        # Checking if the identifier is not None is crucial because not all records at
-        # this point will have a DOI identifier (and that is fine in the case of initial
-        # creation)
-        if identifier is not None:
-            # Format check
-            try:
-                self.client.api.check_doi(identifier)
-            except ValueError as e:
-                # modifies the error in errors in-place
-                self._insert_pid_type_error_msg(errors, str(e))
 
         # Validate record
         if not record.get("metadata", {}).get("publisher"):

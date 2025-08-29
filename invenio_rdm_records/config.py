@@ -367,6 +367,12 @@ RDM_PERSISTENT_IDENTIFIER_PROVIDERS = [
         client=providers.DataCiteClient("datacite", config_prefix="DATACITE"),
         label=_("DOI"),
     ),
+    # Crossref DOI provider
+    providers.CrossrefPIDProvider(
+        "crossref",
+        client=providers.CrossrefClient("crossref", config_prefix="CROSSREF"),
+        label=_("DOI"),
+    ),
     # DOI provider for externally managed DOIs
     providers.ExternalPIDProvider(
         "external",
