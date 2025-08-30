@@ -499,6 +499,36 @@ This is only required if you want your records to be harvestable (OAI-PMH)
 in DataCite XML format.
 """
 
+
+# Configuration for the CrossrefClient used by the DataCitePIDProvider
+
+CROSSREF_ENABLED = False
+"""Flag to enable/disable DOI registration."""
+
+CROSSREF_USERNAME = ""
+"""Crossref username."""
+
+CROSSREF_PASSWORD = ""
+"""Crossref password."""
+
+CROSSREF_DEPOSITOR = ""
+"""Crossref depositor."""
+
+CROSSREF_EMAIL = ""
+"""Crossref email."""
+
+CROSSREF_REGISTRANT = ""
+"""Crossref registrant."""
+
+CROSSREF_PREFIX = ""
+"""Crossref DOI prefix."""
+
+CROSSREF_TEST_MODE = False
+"""Crossref test mode enabled."""
+
+CROSSREF_FORMAT = DATACITE_FORMAT
+"""A string used for formatting the DOI or a callable, same as for DataCite."""
+
 #
 # Custom fields
 #

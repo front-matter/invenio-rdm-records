@@ -76,6 +76,9 @@ class CrossrefClient:
             self._api = CrossrefXMLClient(
                 self.cfg("username"),
                 self.cfg("password"),
+                self.cfg("depositor"),
+                self.cfg("email"),
+                self.cfg("registrant"),
                 self.cfg("prefix"),
                 self.cfg("test_mode", False),
             )
