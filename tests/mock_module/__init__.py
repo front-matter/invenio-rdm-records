@@ -13,7 +13,6 @@ It has to exist here to be picked up correctly by the create_app of
 tests/resources/conftest.py .
 """
 
-
 from flask import Blueprint
 
 
@@ -47,26 +46,31 @@ def create_invenio_app_rdm_records_blueprint(app):
     # Records URL rules
     blueprint.add_url_rule(
         "/records/<pid_value>/files/<path:filename>",
+        endpoint="record_file_download",
         view_func=record_file_download,
     )
 
     blueprint.add_url_rule(
         "/records/<pid_value>",
+        endpoint="record_detail",
         view_func=record_detail,
     )
 
     blueprint.add_url_rule(
         "/uploads/<pid_value>",
+        endpoint="deposit_edit",
         view_func=deposit_edit,
     )
 
     blueprint.add_url_rule(
         "/records/<pid_value>/latest",
+        endpoint="record_latest",
         view_func=record_latest,
     )
 
     blueprint.add_url_rule(
         "/<any(doi):pid_scheme>/<path:pid_value>",
+        endpoint="record_from_pid",
         view_func=record_from_pid,
     )
 

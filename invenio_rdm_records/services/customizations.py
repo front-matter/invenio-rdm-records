@@ -30,10 +30,17 @@ class FromConfigPIDsProviders:
             provider_dict = {"default": None}
 
             for name in pid_config.get("providers", []):
-                # This may throw a KeyError which is a sign that the config
-                # is wrong.
-                provider_dict[name] = pid_providers[name]
-                provider_dict["default"] = provider_dict["default"] or name
+                # Skip providers that are not configured
+                if name in pid_providers:
+                    provider_dict[name] = pid_providers[name]
+                    provider_dict["default"] = provider_dict["default"] or name
+                else:
+                    # Log warning for missing provider but continue
+                    import warnings
+
+                    warnings.warn(
+                        f"PID provider '{name}' not found in RDM_PERSISTENT_IDENTIFIER_PROVIDERS"
+                    )
 
             return provider_dict
 

@@ -101,7 +101,7 @@ from invenio_rdm_records.notifications.builders import (
     UserAccessRequestSubmitNotificationBuilder,
 )
 from invenio_rdm_records.proxies import current_rdm_records_service
-from invenio_rdm_records.records.api import RDMDraft, RDMParent, RDMRecord
+from invenio_rdm_records.records.api import RDMParent, RDMRecord
 from invenio_rdm_records.requests.entity_resolvers import (
     EmailResolver,
     RDMRecordServiceResultResolver,
@@ -157,7 +157,29 @@ def mock_datacite_client():
 
 
 @pytest.fixture(scope="module")
-def app_config(app_config, mock_datacite_client):
+def mock_crossref_client():
+    """Mock Crossref client."""
+    from unittest import mock
+
+    class FakeCrossrefClient(providers.CrossrefClient):
+        """Fake Crossref Client."""
+
+        @property
+        def api(self):
+            """Mock Crossref API client."""
+            if self._api is None:
+                self._api = mock.MagicMock()
+                # Mock successful responses
+                self._api.register.return_value = True
+                self._api.update.return_value = True
+                self._api.unregister.return_value = True
+            return self._api
+
+    return FakeCrossrefClient
+
+
+@pytest.fixture(scope="module")
+def app_config(app_config, mock_datacite_client, mock_crossref_client):
     """Override pytest-invenio app_config fixture.
 
     For test purposes we need to enforce the configuration variables set in
@@ -260,6 +282,13 @@ def app_config(app_config, mock_datacite_client):
     app_config["DATACITE_PASSWORD"] = "INVALID"
     app_config["DATACITE_PREFIX"] = "10.1234"
     app_config["DATACITE_DATACENTER_SYMBOL"] = "TEST"
+
+    # Enable Crossref DOI minting...
+    app_config["CROSSREF_ENABLED"] = True
+    app_config["CROSSREF_USERNAME"] = "INVALID"
+    app_config["CROSSREF_PASSWORD"] = "INVALID"
+    app_config["CROSSREF_PREFIX"] = "10.1234"
+
     # ...but fake it
     app_config["REQUESTS_REVIEWERS_ENABLED"] = True
 
@@ -268,6 +297,12 @@ def app_config(app_config, mock_datacite_client):
         providers.DataCitePIDProvider(
             "datacite",
             client=mock_datacite_client("datacite", config_prefix="DATACITE"),
+            label=_("DOI"),
+        ),
+        # Crossref DOI provider with fake client
+        providers.CrossrefPIDProvider(
+            "crossref",
+            client=mock_crossref_client("crossref", config_prefix="CROSSREF"),
             label=_("DOI"),
         ),
         # DOI provider for externally managed DOIs
@@ -412,44 +447,6 @@ def extra_entry_points():
 def create_app(instance_path, entry_points):
     """Application factory fixture."""
     return _create_app
-
-
-def _search_create_indexes(current_search, current_search_client):
-    """Create all registered search indexes."""
-    to_create = [
-        RDMRecord.index._name,
-        RDMDraft.index._name,
-        Community.index._name,
-    ]
-    # list to trigger iter
-    list(current_search.create(ignore_existing=True, index_list=to_create))
-    current_search_client.indices.refresh()
-
-
-def _search_delete_indexes(current_search):
-    """Delete all registered search indexes."""
-    to_delete = [
-        RDMRecord.index._name,
-        RDMDraft.index._name,
-        Community.index._name,
-    ]
-    list(current_search.delete(index_list=to_delete))
-
-
-# overwrite pytest_invenio.fixture to only delete record indices
-# keeping vocabularies.
-@pytest.fixture()
-def search_clear(search):
-    """Clear search indices after test finishes (function scope).
-
-    This fixture rollback any changes performed to the indexes during a test,
-    in order to leave search in a clean state for the next test.
-    """
-    from invenio_search import current_search, current_search_client
-
-    yield search
-    _search_delete_indexes(current_search)
-    _search_create_indexes(current_search, current_search_client)
 
 
 @pytest.fixture()

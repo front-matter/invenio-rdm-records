@@ -248,3 +248,153 @@ def test_crossref_serializer_empty_record(running_app, empty_record):
     serialized_record = serializer.dump_obj(empty_record)
 
     assert serialized_record == expected_data
+
+
+def test_serialize_publication_conferencepaper(running_app, updated_minimal_record):
+    """Test Crossref XML serializer for conference papers."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = (
+        "publication-conferencepaper"
+    )
+
+    # Force serialization into 'inproceedings'
+    updated_minimal_record.update(
+        {"custom_fields": {"imprint:imprint": {"title": "book title"}}}
+    )
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+    # Force serialization into 'misc'
+    del updated_minimal_record["custom_fields"]["imprint:imprint"]
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_conferenceproceeding(
+    running_app, updated_minimal_record
+):
+    """Test Crossref XML serializer for conference proceedings."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = (
+        "publication-conferenceproceeding"
+    )
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_booksection(running_app, updated_minimal_record):
+    """Test bibtex formatter for a section of a book."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = "publication-section"
+
+    # Force serialization into 'incollection'
+    updated_minimal_record.update(
+        {"custom_fields": {"imprint:imprint": {"title": "book title", "pages": "1-5"}}}
+    )
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+    # Force serialization into 'inbook' (no book title)
+    del updated_minimal_record["custom_fields"]["imprint:imprint"]["title"]
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+    # Force serialization into 'misc' (no pages)
+    del updated_minimal_record["custom_fields"]["imprint:imprint"]["pages"]
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_book(running_app, updated_minimal_record):
+    """Test Crossref XML serializer for books."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = "publication-book"
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+    # Force serialization into 'booklet'
+    del updated_minimal_record["metadata"]["publisher"]
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_article(running_app, updated_minimal_record):
+    """Test Crossref XML serializer for articles."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = "publication-article"
+
+    updated_minimal_record.update(
+        {"custom_fields": {"journal:journal": {"title": "journal title"}}}
+    )
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_preprint(running_app, updated_minimal_record):
+    """Test Crossref XML serializer for preprints."""
+    updated_minimal_record["metadata"]["resource_type"]["id"] = "publication-preprint"
+
+    updated_minimal_record.update(
+        {
+            "additional_descriptions": [
+                {"type": {"id": "other"}, "description": "a description"}
+            ]
+        }
+    )
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
+
+
+def test_serialize_publication_thesis(running_app, updated_minimal_record):
+    """Test crossref xml serializer for thesis.
+
+    It serializes into 'phdthesis'.
+    """
+    updated_minimal_record["metadata"]["resource_type"]["id"] = "publication-thesis"
+
+    updated_minimal_record.update(
+        {"custom_fields": {"thesis:university": "A university"}}
+    )
+
+    serializer = CrossrefXMLSerializer()
+    serialized_record = serializer.serialize_object(updated_minimal_record)
+
+    expected_data = ""
+
+    assert serialized_record == expected_data
