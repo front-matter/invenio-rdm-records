@@ -377,7 +377,11 @@ RDM_PERSISTENT_IDENTIFIER_PROVIDERS = [
     providers.ExternalPIDProvider(
         "external",
         "doi",
-        validators=[providers.BlockedPrefixes(config_names=["DATACITE_PREFIX"])],
+        validators=[
+            providers.BlockedPrefixes(
+                config_names=["DATACITE_PREFIX", "CROSSREF_PREFIXES"]
+            )
+        ],
         label=_("DOI"),
     ),
     # OAI identifier
