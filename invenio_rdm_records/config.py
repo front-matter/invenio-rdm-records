@@ -520,8 +520,8 @@ CROSSREF_EMAIL = ""
 CROSSREF_REGISTRANT = ""
 """Crossref registrant."""
 
-CROSSREF_PREFIX = ""
-"""Crossref DOI prefix."""
+CROSSREF_PREFIXES = []
+"""Crossref DOI prefixes."""
 
 CROSSREF_TEST_MODE = False
 """Crossref test mode enabled."""

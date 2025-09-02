@@ -287,7 +287,7 @@ def app_config(app_config, mock_datacite_client, mock_crossref_client):
     app_config["CROSSREF_ENABLED"] = True
     app_config["CROSSREF_USERNAME"] = "INVALID"
     app_config["CROSSREF_PASSWORD"] = "INVALID"
-    app_config["CROSSREF_PREFIX"] = "10.1234"
+    app_config["CROSSREF_PREFIXES"] = ["10.1234"]
 
     # ...but fake it
     app_config["REQUESTS_REVIEWERS_ENABLED"] = True

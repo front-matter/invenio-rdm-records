@@ -52,9 +52,10 @@ class CrossrefClient:
     def generate_doi(self, record):
         """Generate a DOI."""
         self.check_credentials()
-        prefix = self.cfg("prefix")
-        if not prefix:
-            raise RuntimeError("Invalid DOI prefix configured.")
+        prefixes = self.cfg("prefixes")
+        if not prefixes:
+            raise RuntimeError("Invalid DOI prefixes configured.")
+        prefix = prefixes[0] if prefixes else None
         doi_format = self.cfg("format", "{prefix}/{id}")
         if callable(doi_format):
             return doi_format(prefix, record)
@@ -63,11 +64,11 @@ class CrossrefClient:
 
     def check_credentials(self, **kwargs):
         """Returns if the client has the credentials properly set up."""
-        if not (self.cfg("username") and self.cfg("password") and self.cfg("prefix")):
+        if not (self.cfg("username") and self.cfg("password") and self.cfg("prefixes")):
             warnings.warn(
                 f"The {self.__class__.__name__} is misconfigured. Please "
                 f"set {self.cfgkey('username')}, {self.cfgkey('password')}"
-                f" and {self.cfgkey('prefix')} in your configuration.",
+                f" and {self.cfgkey('prefixes')} in your configuration.",
                 UserWarning,
             )
 
@@ -79,7 +80,7 @@ class CrossrefClient:
             self._api = CrossrefXMLClient(
                 self.cfg("username"),
                 self.cfg("password"),
-                self.cfg("prefix"),
+                self.cfg("prefixes"),
                 self.cfg("test_mode", False),
             )
         return self._api
@@ -169,7 +170,7 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
-            doc = self.serializer.serialize_object(record)
+            doc = self.serializer.dump_obj(record)
             self.client.api.post(doc)
             return True
         except CrossrefError as e:
@@ -219,7 +220,7 @@ class CrossrefPIDProvider(PIDProvider):
         if (
             not identifier
             or not is_doi(identifier)
-            or validate_prefix(identifier) not in [self.client.cfg("prefix")]
+            or validate_prefix(identifier) not in self.client.cfg("prefixes")
         ):
             errors.append(
                 {

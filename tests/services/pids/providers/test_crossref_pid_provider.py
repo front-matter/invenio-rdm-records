@@ -112,7 +112,7 @@ def test_crossref_provider_update(record_w_links, crossref_provider, mocker):
     assert crossref_provider.update(
         pid=created_pid, record=record_w_links, url=record_w_links["links"]["self_html"]
     )
-    # TODO: assert crossref_provider.update(pid=created_pid, record=record_w_links, url=None)
+    assert crossref_provider.update(pid=created_pid, record=record_w_links, url=None)
 
     db_pid = PersistentIdentifier.get(pid_value=created_pid.pid_value, pid_type="doi")
 
@@ -156,7 +156,7 @@ def test_crossref_provider_configuration(record, mocker):
 
 
 def test_crossref_provider_validation(record_w_links):
-    current_app.config["CROSSREF_PREFIX"] = "10.5555"
+    current_app.config["CROSSREF_PREFIXES"] = ["10.5555"]
     client = CrossrefClient("crossref")
     crossref_provider = CrossrefPIDProvider("crossref", client=client)
     record_w_links["metadata"]["resource_type"]["id"] = "publication-preprint"
