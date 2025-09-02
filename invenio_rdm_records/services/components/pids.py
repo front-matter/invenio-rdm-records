@@ -29,7 +29,7 @@ OPTIONAL_DOI_TRANSITIONS = {
         ),
     },
     "crossref": {
-        "allowed_providers": ["crossref"],
+        "allowed_providers": ["crossref", "external"],
         "message": _(
             "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
         ),
