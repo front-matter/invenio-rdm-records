@@ -9,18 +9,17 @@
 """Crossref Serializers for Invenio RDM Records."""
 
 import logging
-from flask_resources import BaseListSchema, MarshmallowSerializer
-from flask_resources.serializers import SimpleSerializer
 
 from commonmeta import (
+    MARSHMALLOW_MAP,
     CrossrefXMLSchema,
     Metadata,
-    unparse_xml,
     convert_crossref_xml,
-    MARSHMALLOW_MAP,
+    unparse_xml,
 )
-
-log = logging.getLogger(__name__)
+from flask import current_app
+from flask_resources import BaseListSchema, MarshmallowSerializer
+from flask_resources.serializers import SimpleSerializer
 
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
@@ -36,18 +35,33 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
             **options,
         )
 
-    def serialize_object(self, record):
-        """Serialize a single record.
+    def dump_obj(self, record):
+        """Dump a single record.
+
+        Uses config variables for Crossref XML head elements.
 
         :param record: Record instance.
         """
+        depositor = current_app.config.get("CROSSREF_DEPOSITOR", None)
+        email = current_app.config.get("CROSSREF_EMAIL", None)
+        registrant = current_app.config.get("CROSSREF_REGISTRANT", None)
 
         # Convert the metadata to crossref_xml format
-        metadata = Metadata(record, via="inveniordm")
+        # Reasons for failing to convert to Crossref XML include missing required metadata
+        # and type not supported by Crossref.
+        metadata = Metadata(
+            record,
+            via="inveniordm",
+            depositor=depositor,
+            email=email,
+            registrant=registrant,
+        )
         data = convert_crossref_xml(metadata)
         if data is None:
-            log.error(f"Could not convert metadata to Crossref XML: {metadata.id}")
-            return None
+            current_app.logger.error(
+                "Could not convert metadata to Crossref XML: %s", metadata.id
+            )
+            return ""
 
         # Use the marshmallow schema to dump the data
         schema = CrossrefXMLSchema()

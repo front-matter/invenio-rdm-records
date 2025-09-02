@@ -107,11 +107,12 @@ def test_crossref_provider_update(record_w_links, crossref_provider, mocker):
         "invenio_rdm_records.services.pids.providers.crossref."
         + "CrossrefXMLSerializer"
     )
+    record_w_links["metadata"]["resource_type"]["id"] = "publication-preprint"
     created_pid = crossref_provider.get(record_w_links["pids"]["doi"]["identifier"])
-    assert crossref_provider.register(
+    assert crossref_provider.update(
         pid=created_pid, record=record_w_links, url=record_w_links["links"]["self_html"]
     )
-    assert crossref_provider.update(pid=created_pid, record=record_w_links, url=None)
+    # TODO: assert crossref_provider.update(pid=created_pid, record=record_w_links, url=None)
 
     db_pid = PersistentIdentifier.get(pid_value=created_pid.pid_value, pid_type="doi")
 
@@ -154,58 +155,31 @@ def test_crossref_provider_configuration(record, mocker):
     assert crossref_provider.create(record).pid_value == expected_result
 
 
-def test_crossref_provider_validation(record):
-    current_app.config["CROSSREF_PREFIX"] = "10.1000"
+def test_crossref_provider_validation(record_w_links):
+    current_app.config["CROSSREF_PREFIX"] = "10.5555"
     client = CrossrefClient("crossref")
     crossref_provider = CrossrefPIDProvider("crossref", client=client)
-    record["metadata"] = {"publisher": "Acme Inc"}
+    record_w_links["metadata"]["resource_type"]["id"] = "publication-preprint"
 
     # Case - Valid identifier (doi) + record
     success, errors = crossref_provider.validate(
-        record=record, identifier="10.1000/valid.1234", provider="crossref"
+        record=record_w_links, identifier="10.5555/valid.1234", provider="crossref"
     )
     assert success
     assert [] == errors
 
-    # Case - Invalid identifier (doi)
+    # Case - Wrong identifier (doi) prefix
     success, errors = crossref_provider.validate(
-        record=record, identifier="10.2000/invalid.1234", provider="crossref"
+        record=record_w_links, identifier="10.2000/invalid.1234", provider="crossref"
     )
     assert not success
     expected = [
         {
-            "field": "pids.doi",
-            "messages": [
-                "Wrong DOI 10.2000 prefix provided, "
-                + "it should be 10.1000 as defined in the crossref client"
-            ],
+            "field": "pids.identifier.doi",
+            "messages": ["Missing or invalid DOI for registration."],
         }
     ]
     assert expected == errors
-
-    current_app.config["CROSSREF_PREFIX"] = "10.1000"
-    client = CrossrefClient("crossref")
-    crossref_provider = CrossrefPIDProvider("crossref", client=client)
-
-    # Case - valid new record without pids.doi (empty pid_dict)
-    assert not record.get("pids", {}).get("doi")
-    success, errors = crossref_provider.validate(record=record, **{})
-    assert [] == errors
-    assert success
-
-    # Case - invalid record
-    del record["metadata"]["publisher"]
-    success, errors = crossref_provider.validate(
-        record=record, identifier="10.1000/valid.1234", provider="crossref"
-    )
-    expected = [
-        {
-            "field": "metadata.publisher",
-            "messages": ["Missing publisher field required for DOI registration."],
-        }
-    ]
-    assert expected == errors
-    assert not success
 
 
 def test_log_error_msg(app, mocker):

@@ -18,8 +18,10 @@ from commonmeta import (
     CrossrefNoContentError,
     CrossrefServerError,
     CrossrefXMLClient,
+    validate_prefix,
 )
 from flask import current_app
+from idutils import is_doi, is_url
 from invenio_i18n import lazy_gettext as _
 from invenio_pidstore.models import PIDStatus
 
@@ -36,6 +38,7 @@ class CrossrefClient:
         self.name = name
         self._config_prefix = config_prefix or "CROSSREF"
         self._config_overrides = config_overrides or {}
+        self._api = None
 
     def cfgkey(self, key):
         """Generate a configuration key."""
@@ -76,9 +79,6 @@ class CrossrefClient:
             self._api = CrossrefXMLClient(
                 self.cfg("username"),
                 self.cfg("password"),
-                self.cfg("depositor"),
-                self.cfg("email"),
-                self.cfg("registrant"),
                 self.cfg("prefix"),
                 self.cfg("test_mode", False),
             )
@@ -169,12 +169,37 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
-            doc = self.serializer.dump_obj(record)
+            doc = self.serializer.serialize_object(record)
             self.client.api.post(doc)
             return True
         except CrossrefError as e:
             current_app.logger.warning(
                 f"Crossref provider error when registering DOI for {pid.pid_value}"
+            )
+            self._log_errors(e)
+
+            return False
+
+    def update(self, pid, record, url=None, **kwargs):
+        """Update metadata with the Crossref XML API.
+
+        :param pid: the PID to update.
+        :param record: the record metadata for the DOI.
+        :returns: `True` if is updated successfully.
+        """
+        if isinstance(record, ChainObject):
+            if record._child["access"]["record"] == "restricted":
+                return False
+        elif record["access"]["record"] == "restricted":
+            return False
+
+        try:
+            doc = self.serializer.dump_obj(record)
+            self.client.api.post(doc)
+            return True
+        except CrossrefError as e:
+            current_app.logger.warning(
+                f"Crossref provider error when updating DOI for {pid.pid_value}"
             )
             self._log_errors(e)
 
@@ -188,18 +213,29 @@ class CrossrefPIDProvider(PIDProvider):
                   error dicts of the form:
                   `{"field": <field>, "messages: ["<msgA1>", ...]}`.
         """
-        # success is unused, but naming it _ would interfere with lazy_gettext as _
-        success, errors = super().validate(record, identifier, provider, **kwargs)
+        errors = []
 
-        # Validate record
-        if not record.get("metadata", {}).get("publisher"):
+        # Validate DOI. Should be a valid DOI with an enabled prefix.
+        if (
+            not identifier
+            or not is_doi(identifier)
+            or validate_prefix(identifier) not in [self.client.cfg("prefix")]
+        ):
             errors.append(
                 {
-                    "field": "metadata.publisher",
-                    "messages": [
-                        _("Missing publisher field required for DOI registration.")
-                    ],
+                    "field": "pids.identifier.doi",
+                    "messages": [_("Missing or invalid DOI for registration.")],
                 }
             )
 
-        return not bool(errors), errors
+        # Validate URL
+        url = record.get("links", {}).get("self_html", None)
+        if not url or not is_url(url):
+            errors.append(
+                {
+                    "field": "links.self_html",
+                    "messages": [_("Missing or invalid URL for registration.")],
+                }
+            )
+
+        return errors == [], errors
