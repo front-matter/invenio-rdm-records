@@ -28,6 +28,12 @@ OPTIONAL_DOI_TRANSITIONS = {
             "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
         ),
     },
+    "crossref": {
+        "allowed_providers": ["crossref"],
+        "message": _(
+            "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
+        ),
+    },
     "external": {
         "allowed_providers": [
             "external",
