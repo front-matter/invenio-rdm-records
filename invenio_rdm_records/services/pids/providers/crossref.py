@@ -171,7 +171,9 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
+            current_app.logger.info(f"Registering DOI for {pid.pid_value}")
             self.client.api.post(doc)
+            current_app.logger.info(f"Registered DOI for {pid.pid_value}")
             return True
         except CrossrefError as e:
             current_app.logger.warning(
@@ -196,7 +198,9 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
+            current_app.logger.info(f"Updating DOI for {pid.pid_value}")
             self.client.api.post(doc)
+            current_app.logger.info(f"Updated DOI for {pid.pid_value}")
             return True
         except CrossrefError as e:
             current_app.logger.warning(
@@ -238,5 +242,5 @@ class CrossrefPIDProvider(PIDProvider):
         #             "messages": [_("Missing or invalid URL for registration.")],
         #         }
         #     )
-
+        current_app.logger.info(f"Validated DOI {identifier}")
         return errors == [], errors
