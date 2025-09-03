@@ -149,15 +149,18 @@ class PIDsComponent(ServiceComponent):
         # ATTENTION: Delete draft is called both for published and unpublished
         # records. Hence, we cannot just delete all PIDs, but only the new
         # unregistered PIDs.
-        to_remove = copy(draft.get("pids", {}))
-        record_pids = record.get("pids", {}).keys() if record else []
-        current_app.logger.error(f"Deleting draft for {record_pids} and {to_remove}")
-        for scheme in record_pids:
-            # make sure to remove only the unregistered PIDs
-            if scheme in to_remove:
-                to_remove.pop(scheme)
+        draft_pids = set(draft.get("pids", {}).keys())
+        record_pids = set(record.get("pids", {}).keys()) if record else set()
+        current_app.logger.error(f"Deleting draft for {record_pids} and {draft_pids}")
 
-        self.service.pids.pid_manager.discard_all(to_remove)
+        # Only remove PIDs that are in draft but not in published record
+        pids_to_remove = {
+            scheme: draft["pids"][scheme]
+            for scheme in (draft_pids - record_pids)
+            if scheme in draft.get("pids", {})
+        }
+
+        self.service.pids.pid_manager.discard_all(pids_to_remove)
         draft.pids = {}
 
     def publish(self, identity, draft=None, record=None):
