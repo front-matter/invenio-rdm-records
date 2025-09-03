@@ -151,7 +151,7 @@ class PIDsComponent(ServiceComponent):
         # unregistered PIDs.
         to_remove = copy(draft.get("pids", {}))
         record_pids = record.get("pids", {}).keys() if record else []
-        current_app.logger.error(f"Deleting draft for {record_pids}")
+        current_app.logger.error(f"Deleting draft for {record_pids} and {to_remove}")
         for scheme in record_pids:
             to_remove.pop(scheme)
 
