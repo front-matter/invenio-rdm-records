@@ -168,6 +168,7 @@ class PIDsComponent(ServiceComponent):
 
         # Extract all PIDs/schemes from the draft and the record
         draft_pids = draft.get("pids", {})
+        current_app.logger.error(f"Publishing the following draft PIDs: {draft_pids}")
         record_pids = copy(record.get("pids", {}))
         current_app.logger.error(f"Publishing the following PIDs: {record_pids}")
         draft_schemes = set(draft_pids.keys())
@@ -230,6 +231,7 @@ class PIDsComponent(ServiceComponent):
 
         # Set the resulting PIDs on the record
         record.pids = pids
+        current_app.logger.error(f"Record PIDs: {pids}")
 
         # Async register/update tasks after transaction commit.
         for scheme in pids.keys():
