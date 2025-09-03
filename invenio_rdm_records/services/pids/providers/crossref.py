@@ -17,11 +17,12 @@ from commonmeta import (
     CrossrefError,
     CrossrefNoContentError,
     CrossrefServerError,
+    CrossrefNotFoundError,
     CrossrefXMLClient,
     validate_prefix,
 )
 from flask import current_app
-from idutils import is_doi, is_url
+from idutils import is_doi
 from invenio_i18n import lazy_gettext as _
 from invenio_pidstore.models import PIDStatus
 
@@ -216,6 +217,44 @@ class CrossrefPIDProvider(PIDProvider):
 
             return False
 
+    def restore(self, pid, **kwargs):
+        """Restore previously deactivated DOI."""
+        try:
+            current_app.logger.error(
+                f"Not implemented: Restoring reserved DOI {pid.pid_value}"
+            )
+        except CrossrefNotFoundError as e:
+            if not current_app.config["CROSSREF_TEST_MODE"]:
+                raise e
+
+        return super().restore(pid, **kwargs)
+
+    def delete(self, pid, **kwargs):
+        """Delete/unregister a registered DOI.
+
+        If the PID has not been reserved then it's deleted only locally.
+        Otherwise, also it's deleted also remotely.
+        :returns: `True` if is deleted successfully.
+        """
+        try:
+            if pid.is_reserved():  # Delete only works for draft DOIs
+                current_app.logger.error(
+                    f"Not implemented: Deleting reserved DOI {pid.pid_value}"
+                )
+            elif pid.is_registered():
+                current_app.logger.error(
+                    f"Not implemented: Deleting registered DOI {pid.pid_value}"
+                )
+        except CrossrefError as e:
+            current_app.logger.warning(
+                f"Crossref provider error when deleting DOI for {pid.pid_value}"
+            )
+            self._log_errors(e)
+
+            return False
+
+        return super().delete(pid, **kwargs)
+
     def validate(self, record, identifier=None, provider=None, **kwargs):
         """Validate the attributes of the identifier.
 
@@ -261,6 +300,9 @@ class CrossrefPIDProvider(PIDProvider):
 
     def create_and_reserve(self, record, **kwargs):
         """Create and reserve a DOI for the given record, and update the record with the reserved DOI."""
+        current_app.logger.error(
+            f"Creating and reserving DOI for record {record['id']} and pids {record.pids}"
+        )
         if "doi" not in record.pids:
             pid = self.create(record)
             self.reserve(pid, record=record)
