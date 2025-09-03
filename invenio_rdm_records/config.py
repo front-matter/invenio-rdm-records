@@ -401,14 +401,15 @@ The name is further used to configure the desired persistent identifiers (see
 """
 
 RDM_PERSISTENT_IDENTIFIERS = {
-    # DOI automatically removed if DATACITE_ENABLED is False.
+    # DOI automatically removed if both DATACITE_ENABLED and CROSSREF_ENABLED are False.
     "doi": {
-        "providers": ["datacite", "external"],
+        "providers": ["datacite", "crossref", "external"],
         "required": True,
         "label": _("DOI"),
         "validator": idutils.is_doi,
         "normalizer": idutils.normalize_doi,
-        "is_enabled": providers.DataCitePIDProvider.is_enabled,
+        "is_enabled": providers.DataCitePIDProvider.is_enabled
+        or providers.CrossrefPIDProvider.is_enabled,
         "ui": {"default_selected": "yes"},  # "yes", "no" or "not_needed"
     },
     "oai": {
