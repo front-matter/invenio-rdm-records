@@ -63,7 +63,10 @@ class CrossrefClient:
             return doi_format.format(prefix=prefix, id=record.pid.pid_value)
 
     def check_credentials(self, **kwargs):
-        """Returns if the client has the credentials properly set up."""
+        """Returns if the client has the credentials properly set up.
+
+        If the client is running on test mode the credentials are not required.
+        """
         if not (self.cfg("username") and self.cfg("password") and self.cfg("prefixes")):
             warnings.warn(
                 f"The {self.__class__.__name__} is misconfigured. Please "
@@ -81,7 +84,7 @@ class CrossrefClient:
                 self.cfg("username"),
                 self.cfg("password"),
                 self.cfg("prefixes"),
-                self.cfg("test_mode", False),
+                self.cfg("test_mode", True),
             )
         return self._api
 
@@ -141,7 +144,9 @@ class CrossrefPIDProvider(PIDProvider):
     def generate_id(self, record, **kwargs):
         """Generate a unique DOI."""
         # Delegate to client
-        return self.client.generate_doi(record)
+        doi = self.client.generate_doi(record)
+        current_app.logger.error(f"Registering DOI {doi}")
+        return doi
 
     @classmethod
     def is_enabled(cls, app):
@@ -166,6 +171,7 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         local_success = super().register(pid)
+        current_app.logger.error(f"Local success registering DOI {local_success}")
         if not local_success:
             return False
 

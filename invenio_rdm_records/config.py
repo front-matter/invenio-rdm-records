@@ -527,7 +527,7 @@ CROSSREF_REGISTRANT = ""
 CROSSREF_PREFIXES = []
 """Crossref DOI prefixes."""
 
-CROSSREF_TEST_MODE = False
+CROSSREF_TEST_MODE = True
 """Crossref test mode enabled."""
 
 CROSSREF_FORMAT = DATACITE_FORMAT
