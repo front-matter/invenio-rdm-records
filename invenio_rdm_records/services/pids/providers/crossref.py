@@ -130,7 +130,7 @@ class CrossrefPIDProvider(PIDProvider):
                 current_app.logger.error("Unknown Crossref error", exc_info=exception)
                 return
 
-       10.53731/dd5h7-z5y55     # the `errors` field is only available when a 4xx error happened (not 500)
+            # the `errors` field is only available when a 4xx error happened (not 500)
             for error in ex_json.get("errors", []):
                 current_app.logger.error(
                     "Crossref error (field: %(field)s): %(reason)s",
