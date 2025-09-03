@@ -233,7 +233,9 @@ class PIDManager:
 
         provider = self._get_provider(scheme, pid_attrs["provider"])
         pid = provider.get(pid_attrs["identifier"])
-
+        current_app.logger.error(
+            f"Registering record {record['id']} with pid {pid} and provider {provider}"
+        )
         provider.register(pid, record=record, url=url)
 
     def discard(self, scheme, identifier, provider_name=None, soft_delete=False):
@@ -247,10 +249,7 @@ class PIDManager:
         if not provider.can_modify(pid) and not soft_delete:
             raise ValidationError(
                 message=[
-                    _(
-                        "Cannot discard a reserved or registered persistent "
-                        "identifier."
-                    ),
+                    _("Cannot discard a reserved or registered persistent identifier."),
                 ],
                 field_name=f"pids.{scheme}",
             )
@@ -303,5 +302,8 @@ class PIDManager:
         """Create and reserve a PID for the given record, and update the record with the reserved PID."""
         pids = record.get("pids", {})
         provider_pid_dicts = self._get_providers(pids)
+        current_app.logger.error(
+            f"Manager: Creating and reserving DOI for record {record['id']} and pids {record.pids}"
+        )
         for provider, _ in provider_pid_dicts:
             provider.create_and_reserve(record)

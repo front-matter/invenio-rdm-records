@@ -109,12 +109,7 @@ class IfExternalDOIRecord(ConditionalGenerator):
 
     def _condition(self, record=None, **kwargs):
         """Check if the record has an external DOI."""
-        doi = record.get("pids", {}).get("doi", {}).get("identifier", None)
-        external = record.get("pids", {}).get("doi", {}).get("provider") == "external"
-        current_app.logger.error(
-            f"Checking if record with DOI {doi} has external DOI: {external}"
-        )
-        return external
+        return record.get("pids", {}).get("doi", {}).get("provider") == "external"
 
 
 class IfDeleted(ConditionalGenerator):
