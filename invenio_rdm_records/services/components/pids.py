@@ -164,13 +164,9 @@ class PIDsComponent(ServiceComponent):
         # and reserve all PIDs. For a published record, some PIDs may allow
         # changes.
 
-        current_app.logger.error(f"Publishing draft {draft.id}")
-
         # Extract all PIDs/schemes from the draft and the record
         draft_pids = draft.get("pids", {})
-        current_app.logger.error(f"Publishing the following draft PIDs: {draft_pids}")
         record_pids = copy(record.get("pids", {}))
-        current_app.logger.error(f"Publishing the following PIDs: {record_pids}")
         draft_schemes = set(draft_pids.keys())
         record_schemes = set(record_pids.keys())
         required_schemes = set(self.service.config.pids_required)
@@ -231,10 +227,12 @@ class PIDsComponent(ServiceComponent):
 
         # Set the resulting PIDs on the record
         record.pids = pids
-        current_app.logger.error(f"Record PIDs: {pids}")
 
         # Async register/update tasks after transaction commit.
         for scheme in pids.keys():
+            current_app.logger.error(
+                f"Publishing record {record['id']} with scheme {scheme} and the following PIDs: {pids}"
+            )
             self.uow.register(TaskOp(register_or_update_pid, record["id"], scheme))
 
     def new_version(self, identity, draft=None, record=None):
