@@ -250,3 +250,21 @@ class CrossrefPIDProvider(PIDProvider):
         #     )
         current_app.logger.error(f"Validated DOI {identifier}")
         return errors == [], errors
+
+    def validate_restriction_level(self, record, identifier=None, **kwargs):
+        """Remove the DOI if the record is restricted."""
+        if identifier and record["access"]["record"] == "restricted":
+            pid = self.get(identifier)
+            if pid.status in [PIDStatus.NEW]:
+                self.delete(pid)
+                del record["pids"][self.pid_type]
+
+    def create_and_reserve(self, record, **kwargs):
+        """Create and reserve a DOI for the given record, and update the record with the reserved DOI."""
+        if "doi" not in record.pids:
+            pid = self.create(record)
+            self.reserve(pid, record=record)
+            pid_attrs = {"identifier": pid.pid_value, "provider": self.name}
+            if self.client:
+                pid_attrs["client"] = self.client.name
+            record.pids["doi"] = pid_attrs
