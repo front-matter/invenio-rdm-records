@@ -164,9 +164,12 @@ class PIDsComponent(ServiceComponent):
         # and reserve all PIDs. For a published record, some PIDs may allow
         # changes.
 
+        current_app.logger.error(f"Publishing draft {draft.id}")
+
         # Extract all PIDs/schemes from the draft and the record
         draft_pids = draft.get("pids", {})
         record_pids = copy(record.get("pids", {}))
+        current_app.logger.error(f"Publishing the following PIDs: {record_pids}")
         draft_schemes = set(draft_pids.keys())
         record_schemes = set(record_pids.keys())
         required_schemes = set(self.service.config.pids_required)
