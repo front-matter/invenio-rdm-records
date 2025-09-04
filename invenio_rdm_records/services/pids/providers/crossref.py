@@ -54,14 +54,14 @@ class CrossrefClient:
         """Generate a DOI."""
         self.check_credentials()
         prefixes = self.cfg("prefixes")
-        if not prefixes:
+        if not prefixes or len(prefixes) == 0:
             raise RuntimeError("Invalid DOI prefixes configured.")
-        prefix = prefixes[0] if prefixes else None
-        doi_format = self.cfg("format", "{prefix}/{id}")
+        prefix = prefixes[0]
+        doi_format = self.cfg("format")
         if callable(doi_format):
             return doi_format(prefix, record)
         else:
-            return doi_format.format(prefix=prefix, id=record.pid.pid_value)
+            return f"{prefix}/{record.pid.pid_value}"
 
     def check_credentials(self, **kwargs):
         """Returns if the client has the credentials properly set up.
