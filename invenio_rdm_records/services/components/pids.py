@@ -125,9 +125,9 @@ class PIDsComponent(ServiceComponent):
         )
         if "pids" in data:  # there is new input data for PIDs
             pids_data = data["pids"]
+        current_app.logger.error(f"Updated PIDs data: {pids_data}")
 
         required_schemes = set(self.service.config.pids_required)
-        current_app.logger.error(f"Required PIDs schemes: {required_schemes}")
 
         # if DOI is not required in an instance check validate allowed providers
         # for each record version
