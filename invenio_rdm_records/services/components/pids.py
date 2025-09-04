@@ -31,7 +31,7 @@ OPTIONAL_DOI_TRANSITIONS = {
     "crossref": {
         "allowed_providers": ["crossref", "external"],
         "message": _(
-            "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
+            "A previous version used a DOI registered from {sitename} or an external provider. This version must also use a DOI from {sitename}."
         ),
     },
     "external": {
@@ -124,7 +124,9 @@ class PIDsComponent(ServiceComponent):
             f"Current PIDs data: {pids_data}, new data: {data.get('pids', {})}"
         )
         if "pids" in data:  # there is new input data for PIDs
-            pids_data = data["pids"]
+            # workaround as crossref provider is changed to external
+            pids_data.get("doi", {}).update(data["pids"].get("doi", {}))
+            # pids_data = data["pids"]
         current_app.logger.error(f"Updated PIDs data: {pids_data}")
 
         required_schemes = set(self.service.config.pids_required)
