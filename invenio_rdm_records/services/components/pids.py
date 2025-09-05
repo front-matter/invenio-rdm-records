@@ -29,14 +29,13 @@ OPTIONAL_DOI_TRANSITIONS = {
         ),
     },
     "crossref": {
-        "allowed_providers": ["crossref"],
+        "allowed_providers": ["crossref", "external"],
         "message": _(
-            "A previous version used a DOI registered from Crossref. This version must also use a DOI from Crossref."
+            "A previous version used a DOI registered from {sitename} or an external provider. This version must also use a DOI from {sitename}."
         ),
     },
     "external": {
         "allowed_providers": [
-            "crossref",
             "external",
             "not_needed",
         ],
@@ -125,6 +124,11 @@ class PIDsComponent(ServiceComponent):
             f"Current PIDs data: {pids_data}, new data: {data.get('pids', {})}"
         )
         if "pids" in data:  # there is new input data for PIDs
+            # if identifier uses one of the crossref prefixes, make sure provider is set to crossref
+            if pids_data.get("doi", {}).get("identifier", "").split("/")[
+                0
+            ] in current_app.config.get("CROSSREF_PREFIXES", []):
+                pids_data["doi"]["provider"] = "crossref"
             pids_data = data["pids"]
         current_app.logger.error(f"Updated PIDs data: {pids_data}")
 
