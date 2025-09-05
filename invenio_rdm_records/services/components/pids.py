@@ -120,11 +120,8 @@ class PIDsComponent(ServiceComponent):
     def update_draft(self, identity, data=None, record=None, errors=None):
         """Update draft handler."""
         pids_data = record.pids or {}  # current pids state
-        current_app.logger.error(
-            f"Current PIDs data: {pids_data}, new data: {data.get('pids', {})}"
-        )
         if "pids" in data:  # there is new input data for PIDs
-            # if identifier uses external provider and one of the crossref prefixes, make sure provider is set to crossref
+            # Workaround: if identifier uses external provider and one of the crossref prefixes, make sure provider is set to crossref
             if data.get("pids", {}).get("doi", {}).get(
                 "provider", ""
             ) == "external" and data.get("pids", {}).get("doi", {}).get(
@@ -132,7 +129,6 @@ class PIDsComponent(ServiceComponent):
             ).split("/")[0] in current_app.config.get("CROSSREF_PREFIXES", []):
                 data["pids"]["doi"]["provider"] = "crossref"
             pids_data = data["pids"]
-        current_app.logger.error(f"Updated PIDs data: {pids_data}")
 
         required_schemes = set(self.service.config.pids_required)
 
@@ -247,9 +243,6 @@ class PIDsComponent(ServiceComponent):
 
         # Async register/update tasks after transaction commit.
         for scheme in pids.keys():
-            current_app.logger.error(
-                f"Publishing record {record['id']} with scheme {scheme} and the following PIDs: {pids}"
-            )
             self.uow.register(TaskOp(register_or_update_pid, record["id"], scheme))
 
     def new_version(self, identity, draft=None, record=None):

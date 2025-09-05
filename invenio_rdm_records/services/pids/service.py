@@ -7,6 +7,7 @@
 
 """RDM PIDs Service."""
 
+from flask import current_app
 from invenio_drafts_resources.services.records import RecordService
 from invenio_pidstore.errors import PIDDoesNotExistError
 from invenio_pidstore.models import PersistentIdentifier
@@ -224,9 +225,11 @@ class PIDsService(RecordService):
 
         if pid.is_registered():
             self.require_permission(identity, "pid_update", record=record)
+            current_app.logger.error(f"Register {record.id}")
             pid_manager.update(pid_record, scheme, url=url)
         else:
             self.require_permission(identity, "pid_register", record=record)
+            current_app.logger.error(f"Update {record.id}")
             pid_manager.register(pid_record, scheme, url=url)
 
         # draft and index do not need commit/refresh

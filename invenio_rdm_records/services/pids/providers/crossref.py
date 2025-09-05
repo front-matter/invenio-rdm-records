@@ -287,7 +287,6 @@ class CrossrefPIDProvider(PIDProvider):
         #             "messages": [_("Missing or invalid URL for registration.")],
         #         }
         #     )
-        current_app.logger.error(f"Validated DOI {identifier}")
         return errors == [], errors
 
     def validate_restriction_level(self, record, identifier=None, **kwargs):
