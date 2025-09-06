@@ -16,8 +16,8 @@ from json import JSONDecodeError
 from commonmeta import (
     CrossrefError,
     CrossrefNoContentError,
-    CrossrefServerError,
     CrossrefNotFoundError,
+    CrossrefServerError,
     CrossrefXMLClient,
     validate_prefix,
 )
@@ -146,7 +146,6 @@ class CrossrefPIDProvider(PIDProvider):
         """Generate a unique DOI."""
         # Delegate to client
         doi = self.client.generate_doi(record)
-        current_app.logger.error(f"Registering DOI {doi}")
         return doi
 
     @classmethod

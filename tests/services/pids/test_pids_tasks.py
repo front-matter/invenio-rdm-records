@@ -101,6 +101,12 @@ def test_register_pid_crossref(
     mock_crossref_client,
 ):
     """Registers a crossref PID."""
+    minimal_record["pids"]["doi"] = {
+        "identifier": "10.5678/inveniordm.1234",
+        "provider": "crossref",
+        "client": "crossref",
+    }
+    minimal_record["metadata"]["resource_type"]["id"] = "publication-preprint"
     service = current_rdm_records.records_service
     draft = service.create(superuser_identity, minimal_record)
     draft = service.pids.create(superuser_identity, draft.id, "doi")
@@ -117,7 +123,7 @@ def test_register_pid_crossref(
     assert pid.status == PIDStatus.RESERVED
     register_or_update_pid(recid=record["id"], scheme="doi")
     assert pid.status == PIDStatus.REGISTERED
-    mock_crossref_client.api.public_doi.assert_has_calls(
+    mock_crossref_client.api.post.assert_has_calls(
         [
             mock.call(
                 metadata={
@@ -341,6 +347,12 @@ def test_update_pid_crossref(
     mock_crossref_client,
 ):
     """No pid provided, creating one by default."""
+    minimal_record["pids"]["doi"] = {
+        "identifier": "10.5678/inveniordm.1234",
+        "provider": "crossref",
+        "client": "crossref",
+    }
+    minimal_record["metadata"]["resource_type"]["id"] = "publication-preprint"
     service = current_rdm_records.records_service
     draft = service.create(superuser_identity, minimal_record)
     record = service.publish(superuser_identity, draft.id)
@@ -1016,7 +1028,7 @@ def test_full_record_register_crossref(
     register_or_update_pid(recid=record["id"], scheme="doi")
     assert pid.status == PIDStatus.REGISTERED
 
-    mock_crossref_client.api.public_doi.assert_has_calls(
+    mock_crossref_client.api.post.assert_has_calls(
         [
             mock.call(
                 metadata={

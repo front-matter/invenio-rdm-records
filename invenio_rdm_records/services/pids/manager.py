@@ -234,7 +234,7 @@ class PIDManager:
         provider = self._get_provider(scheme, pid_attrs["provider"])
         pid = provider.get(pid_attrs["identifier"])
         current_app.logger.error(
-            f"Registering record {record['id']} with pid {pid} and provider {provider}"
+            f"Registering record {record['id']} with pid {pid} and scheme {scheme}"
         )
         provider.register(pid, record=record, url=url)
 
