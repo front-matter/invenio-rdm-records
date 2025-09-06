@@ -42,10 +42,17 @@ class CrossrefClient:
         self.name = name
         self._config_prefix = config_prefix or "CROSSREF"
         self._config_overrides = config_overrides or {}
+
+        # Set values from kwargs or use defaults (don't access config yet)
         self.timeout = kwargs.get("timeout", 30)
         self.test_mode = kwargs.get("test_mode", False)
-        self.prefixes = [str(prefix) for prefix in kwargs.get("prefixes", [])]
+        self.prefixes = kwargs.get("prefixes", [])
 
+        # Ensure prefixes are strings
+        if self.prefixes:
+            self.prefixes = [str(prefix) for prefix in self.prefixes]
+
+        # Set API URL based on test mode
         if self.test_mode:
             self.api_url = "https://test.crossref.org/servlet/deposit"
         else:
@@ -61,18 +68,34 @@ class CrossrefClient:
         return config.get(self.cfgkey(key), default)
 
     def check_credentials(self, **kwargs):
-        """Returns if the client has the credentials properly set up."""
-        if not (self.cfg("username") and self.cfg("password") and self.cfg("prefixes")):
+        """Check if the client has the credentials properly set up.
+
+        :returns: True if credentials are properly configured, False otherwise.
+        """
+        username = self.cfg("username")
+        password = self.cfg("password")
+        prefixes = self.cfg("prefixes", [])
+
+        if not username or not password or not prefixes:
             warnings.warn(
                 f"The {self.__class__.__name__} is misconfigured. Please "
                 f"set {self.cfgkey('username')}, {self.cfgkey('password')}"
                 f" and {self.cfgkey('prefixes')} in your configuration.",
                 UserWarning,
             )
+            return False
+        return True
 
     def generate_doi(self, record):
-        """Generate a DOI."""
-        self.check_credentials()
+        """Generate a DOI.
+
+        :param record: The record for which to generate a DOI.
+        :returns: Generated DOI string.
+        :raises RuntimeError: If credentials or prefixes are not configured.
+        """
+        if not self.check_credentials():
+            raise RuntimeError("Crossref client credentials not properly configured.")
+
         prefixes = self.cfg("prefixes", [])
         if not prefixes:
             raise RuntimeError("Invalid DOI prefixes configured.")
@@ -86,7 +109,14 @@ class CrossrefClient:
         if callable(doi_format):
             return doi_format(prefix, record)
         else:
-            return doi_format.format(prefix=prefix, id=record.pid.pid_value)
+            # Ensure we have a valid record ID
+            record_id = getattr(record, "pid", None)
+            if record_id and hasattr(record_id, "pid_value"):
+                return doi_format.format(prefix=prefix, id=record_id.pid_value)
+            elif hasattr(record, "id"):
+                return doi_format.format(prefix=prefix, id=record.id)
+            else:
+                raise RuntimeError("Cannot generate DOI: record has no valid ID.")
 
     @property
     def username(self):
@@ -102,12 +132,18 @@ class CrossrefClient:
         """Upload metadata for a new or existing DOI.
 
         :param input_xml: XML metadata following the Crossref Metadata Schema (str or bytes).
-        :return: Status string ('SUCCESS' or '{}' on error).
+        :return: Status string ('SUCCESS' or 'ERROR' on failure).
+        :raises RuntimeError: If credentials are not configured.
         """
+        if not self.check_credentials():
+            raise RuntimeError("Crossref client credentials not properly configured.")
+
         try:
             # Convert string to bytes if necessary
             if isinstance(input_xml, str):
                 input_xml = input_xml.encode("utf-8")
+            elif not isinstance(input_xml, bytes):
+                raise ValueError("input_xml must be string or bytes")
 
             # The filename displayed in the Crossref admin interface
             filename = f"{int(time())}"
@@ -123,16 +159,64 @@ class CrossrefClient:
 
             headers = {"Content-Type": multipart_data.content_type}
 
+            # Log the request (without sensitive data)
+            current_app.logger.info(f"Submitting Crossref deposit to {self.api_url}")
+
             # Make the request
             resp = requests.post(
                 self.api_url, data=multipart_data, headers=headers, timeout=self.timeout
             )
+
+            # Check for HTTP errors
             resp.raise_for_status()
-            current_app.logger.debug(f"Crossref response: {resp.text}")
-            return "SUCCESS"
-        except requests.RequestException as e:
-            current_app.logger.error("Crossref deposit error", exc_info=e)
+
+            # Log response details
+            current_app.logger.error(f"Crossref response status: {resp.status_code}")
+            current_app.logger.error(f"Crossref response: {resp.text}")
+
+            # Parse response to check for success/failure
+            response_text = resp.text.strip()
+            if "SUCCESS" in response_text:
+                current_app.logger.error("Crossref deposit successful")
+                return "SUCCESS"
+            else:
+                current_app.logger.error(
+                    f"Crossref deposit may have failed: {response_text}"
+                )
+                return "ERROR"
+
+        except requests.Timeout as e:
+            current_app.logger.error(
+                f"Crossref deposit timeout after {self.timeout}s", exc_info=e
+            )
             return "ERROR"
+        except requests.RequestException as e:
+            current_app.logger.error("Crossref deposit request error", exc_info=e)
+            return "ERROR"
+        except ValueError as e:
+            current_app.logger.error(f"Crossref deposit input error: {e}")
+            return "ERROR"
+        except Exception as e:
+            current_app.logger.error(
+                "Unexpected error during Crossref deposit", exc_info=e
+            )
+            return "ERROR"
+
+    def validate_doi(self, doi):
+        """Validate if a DOI is valid and uses an allowed prefix.
+
+        :param doi: DOI string to validate.
+        :returns: True if valid, False otherwise.
+        """
+        if not doi or not is_doi(doi):
+            return False
+
+        try:
+            doi_prefix = validate_prefix(doi)
+            prefixes = self.cfg("prefixes", [])
+            return doi_prefix in [str(p) for p in prefixes]
+        except Exception:
+            return False
 
 
 class CrossrefPIDProvider(PIDProvider):
@@ -248,15 +332,15 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is registered successfully.
         """
         local_success = super().register(pid)
-        current_app.logger.debug(f"Local success registering DOI {local_success}")
+        current_app.logger.error(f"Local success registering DOI {local_success}")
         if not local_success:
             return False
 
         try:
             doc = self.serializer.dump_obj(record)
-            current_app.logger.info(f"Registering DOI for {pid.pid_value}")
+            current_app.logger.error(f"Registering DOI for {pid.pid_value}")
             self.client.deposit(doc)
-            current_app.logger.info(f"Registered DOI for {pid.pid_value}")
+            current_app.logger.error(f"Registered DOI for {pid.pid_value}")
             return True
         except CrossrefError as e:
             current_app.logger.warning(
