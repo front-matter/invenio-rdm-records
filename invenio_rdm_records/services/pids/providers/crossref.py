@@ -105,7 +105,7 @@ class CrossrefClient:
         :raises RuntimeError: If credentials or prefixes are not configured.
         """
         current_app.logger.error(
-            f"CrossrefClient.generate_doi: Starting DOI generation for record"
+            "CrossrefClient.generate_doi: Starting DOI generation for record"
         )
 
         if not self.check_credentials():
@@ -161,11 +161,9 @@ class CrossrefClient:
                 current_app.logger.error(
                     "CrossrefClient.generate_doi: Failed - record has no valid ID"
                 )
-                raise (
-                    RuntimeError("Cannot generate DOI: record has no valid ID.")
-                    @ property
-                )
+                raise RuntimeError("Cannot generate DOI: record has no valid ID.")
 
+    @property
     def username(self):
         """Get the Crossref username."""
         return self.cfg("username")
