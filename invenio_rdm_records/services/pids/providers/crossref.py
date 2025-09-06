@@ -43,14 +43,9 @@ class CrossrefClient:
         self._config_prefix = config_prefix or "CROSSREF"
         self._config_overrides = config_overrides or {}
 
-        # Set values from kwargs or use defaults (don't access config yet)
-        self.timeout = kwargs.get("timeout", 30)
-        self.test_mode = kwargs.get("test_mode", False)
-        self.prefixes = kwargs.get("prefixes", [])
-
-        # Ensure prefixes are strings
-        if self.prefixes:
-            self.prefixes = [str(prefix) for prefix in self.prefixes]
+        # Set reasonable defaults
+        self.timeout = 30
+        self.test_mode = False
 
         # Set API URL based on test mode
         if self.test_mode:
@@ -72,16 +67,16 @@ class CrossrefClient:
 
         :returns: True if credentials are properly configured, False otherwise.
         """
-        username = self.cfg("username")
-        password = self.cfg("password")
-        prefixes = self.cfg("prefixes", [])
-
         current_app.logger.error(
-            f"CrossrefClient.check_credentials: username={'***' if username else None}, "
-            f"password={'***' if password else None}, prefixes={prefixes}"
+            f"CrossrefClient.check_credentials: username={'***' if self.cfg('username') else None}, "
+            f"password={'***' if self.cfg('password') else None}, prefixes={self.cfg('prefixes', [])}"
         )
 
-        if not username or not password or not prefixes:
+        if (
+            not self.cfg("username")
+            or not self.cfg("password")
+            or not self.cfg("prefixes")
+        ):
             current_app.logger.error(
                 f"CrossrefClient configuration incomplete: missing credentials or prefixes. "
                 f"Required: {self.cfgkey('username')}, {self.cfgkey('password')}, {self.cfgkey('prefixes')}"
