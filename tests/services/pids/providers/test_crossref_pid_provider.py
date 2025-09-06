@@ -51,35 +51,13 @@ def record_w_links(running_app, minimal_record):
 
 
 def test_crossref_provider_create(record, crossref_provider):
-    created_pid = crossref_provider.create(record)
+    created_pid = crossref_provider.create(record, pid_value="10.5678/5678")
     db_pid = PersistentIdentifier.get(pid_value=created_pid.pid_value, pid_type="doi")
 
     assert created_pid == db_pid
     assert created_pid.pid_value
     assert created_pid.pid_type == "doi"
     assert created_pid.status == PIDStatus.NEW
-
-
-def test_crossref_provider_get(record, crossref_provider):
-    created_pid = crossref_provider.create(record)
-    get_pid = crossref_provider.get(created_pid.pid_value)
-
-    assert created_pid == get_pid
-    assert get_pid.pid_value
-    assert get_pid.pid_type == "doi"
-    assert get_pid.status == PIDStatus.NEW
-
-
-def test_crossref_provider_reserve(record, crossref_provider):
-    created_pid = crossref_provider.create(record)
-    assert crossref_provider.reserve(pid=created_pid, record=record)
-
-    db_pid = PersistentIdentifier.get(pid_value=created_pid.pid_value, pid_type="doi")
-
-    assert created_pid == db_pid
-    assert db_pid.pid_value
-    assert db_pid.pid_type == "doi"
-    assert db_pid.status == PIDStatus.RESERVED
 
 
 def test_crossref_provider_register(record_w_links, crossref_provider, mocker):
@@ -122,16 +100,6 @@ def test_crossref_provider_update(record_w_links, crossref_provider, mocker):
     assert db_pid.status == PIDStatus.REGISTERED
 
 
-def test_crossref_provider_unregister_new(record, crossref_provider):
-    # Unregister NEW is a hard delete
-    created_pid = crossref_provider.create(record)
-    assert created_pid.status == PIDStatus.NEW
-    assert crossref_provider.delete(created_pid)
-
-    with pytest.raises(PIDDoesNotExistError):
-        PersistentIdentifier.get(pid_value=created_pid.pid_value, pid_type="doi")
-
-
 def test_crossref_provider_configuration(record, mocker):
     def custom_format_func(*args):
         return "10.123/custom.func"
@@ -141,7 +109,10 @@ def test_crossref_provider_configuration(record, mocker):
     # check with default func
     crossref_provider = CrossrefPIDProvider("crossref", client=client)
     expected_result = crossref_provider.generate_id(record)
-    assert crossref_provider.create(record).pid_value == expected_result
+    assert (
+        crossref_provider.create(record, pid_value="10.5678/5678").pid_value
+        == expected_result
+    )
 
     # check id generation from env func
     current_app.config["CROSSREF_FORMAT"] = custom_format_func

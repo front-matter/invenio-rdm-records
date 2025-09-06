@@ -8,23 +8,26 @@
 
 """Crossref DOI Provider."""
 
+import io
 import json
 import warnings
 from collections import ChainMap
 from json import JSONDecodeError
+from time import time
 
+import requests
 from commonmeta import (
     CrossrefError,
     CrossrefNoContentError,
-    CrossrefNotFoundError,
     CrossrefServerError,
-    CrossrefXMLClient,
     validate_prefix,
 )
 from flask import current_app
 from idutils import is_doi
 from invenio_i18n import lazy_gettext as _
-from invenio_pidstore.models import PIDStatus
+from invenio_pidstore.errors import PIDAlreadyExists, PIDDoesNotExistError
+from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from ....resources.serializers import CrossrefXMLSerializer
 from ....utils import ChainObject
@@ -39,7 +42,14 @@ class CrossrefClient:
         self.name = name
         self._config_prefix = config_prefix or "CROSSREF"
         self._config_overrides = config_overrides or {}
-        self._api = None
+        self.timeout = kwargs.get("timeout", 30)
+        self.test_mode = kwargs.get("test_mode", False)
+        self.prefixes = [str(prefix) for prefix in kwargs.get("prefixes", [])]
+
+        if self.test_mode:
+            self.api_url = "https://test.crossref.org/servlet/deposit"
+        else:
+            self.api_url = "https://doi.crossref.org/servlet/deposit"
 
     def cfgkey(self, key):
         """Generate a configuration key."""
@@ -50,24 +60,8 @@ class CrossrefClient:
         config = ChainMap(self._config_overrides, current_app.config)
         return config.get(self.cfgkey(key), default)
 
-    def generate_doi(self, record):
-        """Generate a DOI."""
-        self.check_credentials()
-        prefixes = self.cfg("prefixes")
-        if not prefixes or len(prefixes) == 0:
-            raise RuntimeError("Invalid DOI prefixes configured.")
-        prefix = prefixes[0]
-        doi_format = self.cfg("format")
-        if callable(doi_format):
-            return doi_format(prefix, record)
-        else:
-            return f"{prefix}/{record.pid.pid_value}"
-
     def check_credentials(self, **kwargs):
-        """Returns if the client has the credentials properly set up.
-
-        If the client is running on test mode the credentials are not required.
-        """
+        """Returns if the client has the credentials properly set up."""
         if not (self.cfg("username") and self.cfg("password") and self.cfg("prefixes")):
             warnings.warn(
                 f"The {self.__class__.__name__} is misconfigured. Please "
@@ -76,18 +70,69 @@ class CrossrefClient:
                 UserWarning,
             )
 
+    def generate_doi(self, record):
+        """Generate a DOI."""
+        self.check_credentials()
+        prefixes = self.cfg("prefixes", [])
+        if not prefixes:
+            raise RuntimeError("Invalid DOI prefixes configured.")
+
+        # Use the first prefix for generation
+        prefix = str(prefixes[0]) if prefixes else None
+        if not prefix:
+            raise RuntimeError("Invalid DOI prefix configured.")
+
+        doi_format = self.cfg("format", "{prefix}/{id}")
+        if callable(doi_format):
+            return doi_format(prefix, record)
+        else:
+            return doi_format.format(prefix=prefix, id=record.pid.pid_value)
+
     @property
-    def api(self):
-        """Crossref XML API client instance."""
-        if self._api is None:
-            self.check_credentials()
-            self._api = CrossrefXMLClient(
-                self.cfg("username"),
-                self.cfg("password"),
-                self.cfg("prefixes"),
-                self.cfg("test_mode", True),
+    def username(self):
+        """Get the Crossref username."""
+        return self.cfg("username")
+
+    @property
+    def password(self):
+        """Get the Crossref password."""
+        return self.cfg("password")
+
+    def deposit(self, input_xml):
+        """Upload metadata for a new or existing DOI.
+
+        :param input_xml: XML metadata following the Crossref Metadata Schema (str or bytes).
+        :return: Status string ('SUCCESS' or '{}' on error).
+        """
+        try:
+            # Convert string to bytes if necessary
+            if isinstance(input_xml, str):
+                input_xml = input_xml.encode("utf-8")
+
+            # The filename displayed in the Crossref admin interface
+            filename = f"{int(time())}"
+
+            multipart_data = MultipartEncoder(
+                fields={
+                    "fname": (filename, io.BytesIO(input_xml), "application/xml"),
+                    "operation": "doMDUpload",
+                    "login_id": self.username,
+                    "login_passwd": self.password,
+                }
             )
-        return self._api
+
+            headers = {"Content-Type": multipart_data.content_type}
+
+            # Make the request
+            resp = requests.post(
+                self.api_url, data=multipart_data, headers=headers, timeout=self.timeout
+            )
+            resp.raise_for_status()
+            current_app.logger.debug(f"Crossref response: {resp.text}")
+            return "SUCCESS"
+        except requests.RequestException as e:
+            current_app.logger.error("Crossref deposit error", exc_info=e)
+            return "ERROR"
 
 
 class CrossrefPIDProvider(PIDProvider):
@@ -142,6 +187,37 @@ class CrossrefPIDProvider(PIDProvider):
                     exc_info=exception,
                 )
 
+    def create(self, record, pid_value=None, status=None, **kwargs):
+        """Get or create the PID with given value for the given record.
+
+        :param record: the record to create the PID for.
+        :param pid_value: the PID value.
+        :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
+            instance.
+        """
+        if pid_value is None:
+            raise ValueError(_("You must provide a pid value."))
+
+        try:
+            pid = self.get(pid_value)
+        except PIDDoesNotExistError:
+            # not existing, create a new one
+            return PersistentIdentifier.create(
+                self.pid_type,
+                pid_value,
+                pid_provider=self.name,
+                object_type="rec",
+                object_uuid=record.id,
+                status=status or self.default_status,
+            )
+
+        # re-activate if previously deleted
+        if pid.is_deleted():
+            pid.sync_status(PIDStatus.NEW)
+            return pid
+        else:
+            raise PIDAlreadyExists(self.pid_type, pid_value)
+
     def generate_id(self, record, **kwargs):
         """Generate a unique DOI."""
         # Delegate to client
@@ -153,9 +229,16 @@ class CrossrefPIDProvider(PIDProvider):
         """Determine if crossref is enabled or not."""
         return app.config.get("CROSSREF_ENABLED", False)
 
+    def is_managed(self):
+        """Determine if the PID is managed by Crossref.
+
+        This initial version expects the PID value to be provided by the user.
+        """
+        return False
+
     def can_modify(self, pid, **kwargs):
         """Checks if the PID can be modified."""
-        return not pid.is_registered() and not pid.is_reserved()
+        return not pid.is_registered()
 
     def register(self, pid, record, **kwargs):
         """Register metadata with the Crossref XML API.
@@ -164,22 +247,16 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is registered successfully.
         """
-        if isinstance(record, ChainObject):
-            if record._child["access"]["record"] == "restricted":
-                return False
-        elif record["access"]["record"] == "restricted":
-            return False
-
         local_success = super().register(pid)
-        current_app.logger.error(f"Local success registering DOI {local_success}")
+        current_app.logger.debug(f"Local success registering DOI {local_success}")
         if not local_success:
             return False
 
         try:
             doc = self.serializer.dump_obj(record)
-            current_app.logger.error(f"Registering DOI for {pid.pid_value}")
-            self.client.api.post(doc)
-            current_app.logger.error(f"Registered DOI for {pid.pid_value}")
+            current_app.logger.info(f"Registering DOI for {pid.pid_value}")
+            self.client.deposit(doc)
+            current_app.logger.info(f"Registered DOI for {pid.pid_value}")
             return True
         except CrossrefError as e:
             current_app.logger.warning(
@@ -204,9 +281,9 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
-            current_app.logger.error(f"Updating DOI for {pid.pid_value}")
-            self.client.api.post(doc)
-            current_app.logger.error(f"Updated DOI for {pid.pid_value}")
+            current_app.logger.info(f"Updating DOI for {pid.pid_value}")
+            self.client.deposit(doc)
+            current_app.logger.info(f"Updated DOI for {pid.pid_value}")
             return True
         except CrossrefError as e:
             current_app.logger.warning(
@@ -215,18 +292,6 @@ class CrossrefPIDProvider(PIDProvider):
             self._log_errors(e)
 
             return False
-
-    def restore(self, pid, **kwargs):
-        """Restore previously deactivated DOI."""
-        try:
-            current_app.logger.error(
-                f"Not implemented: Restoring reserved DOI {pid.pid_value}"
-            )
-        except CrossrefNotFoundError as e:
-            if not current_app.config["CROSSREF_TEST_MODE"]:
-                raise e
-
-        return super().restore(pid, **kwargs)
 
     def delete(self, pid, **kwargs):
         """Delete/unregister a registered DOI.
@@ -237,11 +302,11 @@ class CrossrefPIDProvider(PIDProvider):
         """
         try:
             if pid.is_reserved():  # Delete only works for draft DOIs
-                current_app.logger.error(
+                current_app.logger.info(
                     f"Not implemented: Deleting reserved DOI {pid.pid_value}"
                 )
             elif pid.is_registered():
-                current_app.logger.error(
+                current_app.logger.info(
                     f"Not implemented: Deleting registered DOI {pid.pid_value}"
                 )
         except CrossrefError as e:
@@ -287,24 +352,3 @@ class CrossrefPIDProvider(PIDProvider):
         #         }
         #     )
         return errors == [], errors
-
-    def validate_restriction_level(self, record, identifier=None, **kwargs):
-        """Remove the DOI if the record is restricted."""
-        if identifier and record["access"]["record"] == "restricted":
-            pid = self.get(identifier)
-            if pid.status in [PIDStatus.NEW]:
-                self.delete(pid)
-                del record["pids"][self.pid_type]
-
-    def create_and_reserve(self, record, **kwargs):
-        """Create and reserve a DOI for the given record, and update the record with the reserved DOI."""
-        current_app.logger.error(
-            f"Creating and reserving DOI for record {record['id']} and pids {record.pids}"
-        )
-        if "doi" not in record.pids:
-            pid = self.create(record)
-            self.reserve(pid, record=record)
-            pid_attrs = {"identifier": pid.pid_value, "provider": self.name}
-            if self.client:
-                pid_attrs["client"] = self.client.name
-            record.pids["doi"] = pid_attrs

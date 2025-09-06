@@ -14,18 +14,23 @@ from unittest.mock import Mock
 from invenio_rdm_records.services.pids import providers
 
 
-class FakeDataCrossrefXMLClient:
-    """Crossref XML API client wrapper."""
+class FakeCrossrefClient(providers.CrossrefClient):
+    """Fake Crossref Client."""
 
-    def __init__(
-        self,
-        username,
-        password,
-        prefixes: list[str] = ["10.5555"],
-        test_mode=False,
-        timeout: int = 30,
-    ):
-        """Initialize the XML client wrapper.
+    def __init__(self, name, config_prefix=None, config_overrides=None, **kwargs):
+        """Constructor."""
+        self.name = name
+        self._config_prefix = config_prefix or "CROSSREF"
+        self._config_overrides = config_overrides or {}
+        self.timeout = kwargs.get("timeout", 30)
+        self.test_mode = kwargs.get("test_mode", False)
+        self.prefixes = [str(prefix) for prefix in kwargs.get("prefixes", [])]
+
+        if self.test_mode:
+            self.api_url = "https://test.crossref.org/servlet/deposit"
+        else:
+            self.api_url = "https://doi.crossref.org/servlet/deposit"
+        """Initialize the Crossref client.
 
         :param username: Crossref username.
         :param password: Crossref password.
@@ -34,38 +39,11 @@ class FakeDataCrossrefXMLClient:
         :param timeout: Connect and read timeout in seconds. Specify a tuple
             (connect, read) to specify each timeout individually.
         """
-        self.username = str(username)
-        self.password = str(password)
-        self.prefixes = [str(prefix) for prefix in prefixes]
 
-        if test_mode:
-            self.api_url = "https://test.crossref.org/servlet/deposit"
-        else:
-            self.api_url = "https://doi.crossref.org/servlet/deposit"
+    def deposit(self, input_xml):
+        """Deposit metadata.
 
-        self.timeout = timeout
-
-    def post(self, input_xml: Union[str, bytes]) -> str:
-        """Register or update metadata.
-
-        :param input_xml: XML format of the metadata.
+        :param input_xml: metadata in Crossref XML format.
         :return:
         """
         return Mock()
-
-
-class FakeCrossrefClient(providers.CrossrefClient):
-    """Fake Crossref Client."""
-
-    @property
-    def api(self):
-        """Crossref XML API client instance."""
-        if self._api is None:
-            self.check_credentials()
-            self._api = FakeCrossrefClient(
-                self.cfg("username"),
-                self.cfg("password"),
-                self.cfg("prefixes"),
-                self.cfg("test_mode", True),
-            )
-        return self._api

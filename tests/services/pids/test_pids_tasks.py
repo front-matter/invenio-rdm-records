@@ -32,8 +32,7 @@ def mock_datacite_client(mock_datacite_client):
 @pytest.fixture(scope="module")
 def mock_crossref_client(mock_crossref_client):
     """Mock Crossref client API calls."""
-    with mock.patch.object(mock_crossref_client, "api"):
-        yield mock_crossref_client
+    return mock_crossref_client
 
 
 def test_register_pid(
@@ -370,10 +369,10 @@ def test_update_pid_crossref(
     # we do not explicitly call the update_pid task
     # we check that the lower level provider update is called
     record_edited = service.edit(superuser_identity, record.id)
-    assert mock_crossref_client.api.post.called is False
+    assert mock_crossref_client.deposit.called is False
     service.publish(superuser_identity, record_edited.id)
 
-    mock_crossref_client.api.post.assert_has_calls(
+    mock_crossref_client.deposit.assert_has_calls(
         [
             mock.call(
                 metadata={
@@ -1028,7 +1027,7 @@ def test_full_record_register_crossref(
     register_or_update_pid(recid=record["id"], scheme="doi")
     assert pid.status == PIDStatus.REGISTERED
 
-    mock_crossref_client.api.post.assert_has_calls(
+    mock_crossref_client.deposit.assert_has_calls(
         [
             mock.call(
                 metadata={
