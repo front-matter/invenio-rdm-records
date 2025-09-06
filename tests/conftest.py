@@ -113,6 +113,7 @@ from invenio_rdm_records.services.communities.components import (
 from invenio_rdm_records.services.pids import providers
 
 from .fake_datacite_client import FakeDataCiteClient
+from .fake_crossref_client import FakeCrossrefClient
 
 
 class UserPreferencesNotificationsSchema(UserPreferencesSchema):
@@ -159,22 +160,6 @@ def mock_datacite_client():
 @pytest.fixture(scope="module")
 def mock_crossref_client():
     """Mock Crossref client."""
-    from unittest import mock
-
-    class FakeCrossrefClient(providers.CrossrefClient):
-        """Fake Crossref Client."""
-
-        @property
-        def api(self):
-            """Mock Crossref API client."""
-            if self._api is None:
-                self._api = mock.MagicMock()
-                # Mock successful responses
-                self._api.register.return_value = True
-                self._api.update.return_value = True
-                self._api.unregister.return_value = True
-            return self._api
-
     return FakeCrossrefClient
 
 
@@ -287,7 +272,7 @@ def app_config(app_config, mock_datacite_client, mock_crossref_client):
     app_config["CROSSREF_ENABLED"] = True
     app_config["CROSSREF_USERNAME"] = "INVALID"
     app_config["CROSSREF_PASSWORD"] = "INVALID"
-    app_config["CROSSREF_PREFIXES"] = ["10.1234"]
+    app_config["CROSSREF_PREFIXES"] = ["10.5678"]
 
     # ...but fake it
     app_config["REQUESTS_REVIEWERS_ENABLED"] = True
@@ -309,7 +294,11 @@ def app_config(app_config, mock_datacite_client, mock_crossref_client):
         providers.ExternalPIDProvider(
             "external",
             "doi",
-            validators=[providers.BlockedPrefixes(config_names=["DATACITE_PREFIX"])],
+            validators=[
+                providers.BlockedPrefixes(
+                    config_names=["DATACITE_PREFIX", "CROSSREF_PREFIXES"]
+                )
+            ],
             label=_("DOI"),
         ),
         # OAI identifier

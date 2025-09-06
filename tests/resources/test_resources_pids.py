@@ -135,6 +135,30 @@ def test_external_doi_blocked_prefix(
     ]
 
 
+def test_external_doi_blocked_crossref_prefix(
+    running_app, client, minimal_record, headers, search_clear, uploader
+):
+    """Tests for issue #847."""
+    client = uploader.login(client)
+    # Make a DOI in the crossref prefix
+    crossref_prefixes = running_app.app.config["CROSSREF_PREFIXES"]
+    doi = f"{crossref_prefixes[0]}/1"
+
+    # Publish one record with  DOIs.
+    minimal_record["pids"] = {"doi": {"provider": "external", "identifier": doi}}
+    draft = client.post("/records", headers=headers, json=minimal_record)
+    assert draft.status_code == 201
+    # The invalid prefix should be reported.
+    assert draft.json["errors"] == [
+        {
+            "field": "pids.doi",
+            "messages": [
+                "The prefix '10.5678' is managed by Invenio. Please supply an external DOI or select 'No' to have a DOI generated for you."
+            ],
+        }
+    ]
+
+
 def test_external_doi_required(
     running_app, client, minimal_record, headers, search_clear, uploader
 ):

@@ -797,6 +797,7 @@ def test_response_handlers(running_app, minimal_record, client_with_login):
         "application/vnd.geo+json",
         "application/vnd.datacite.datacite+xml",
         "application/x-dc+xml",
+        "application/vnd.crossref.unixsd+xml",
         "text/x-bibliography",
         "application/dcat+xml",
         "application/linkset+json",
@@ -952,7 +953,6 @@ def test_search_community_records(
 def test_search_internal_notes_fields(
     running_app, client, minimal_record, headers, search_clear, superuser, users
 ):
-
     # login regular user
     login_user(client, users[0])
     minimal_record_w_int_notes = deepcopy(minimal_record)

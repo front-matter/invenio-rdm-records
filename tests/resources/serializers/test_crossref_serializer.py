@@ -46,9 +46,9 @@ def test_serialize_publication_article(running_app, minimal_record):
     minimal_record["metadata"]["resource_type"]["id"] = "publication-article"
     minimal_record["pids"] = {
         "doi": {
-            "identifier": "10.1234/inveniordm.1234",
+            "identifier": "10.5678/inveniordm.1234",
             "provider": "crossref",
-            "client": "inveniordm",
+            "client": "crossref",
         }
     }
 
