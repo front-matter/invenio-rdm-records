@@ -337,6 +337,7 @@ def test_signposting_lvl1_serializer_full_collections_size_ok(
         f'<{api_url}> ; rel="describedby" ; type="application/vnd.inveniordm.v1.simple+csv"',
         f'<{api_url}> ; rel="describedby" ; type="application/x-bibtex"',
         f'<{api_url}> ; rel="describedby" ; type="application/x-dc+xml"',
+        f'<{api_url}> ; rel="describedby" ; type="application/vnd.crossref.unixsd+xml"',
         f'<{api_url}> ; rel="describedby" ; type="text/x-bibliography"',
         f'<{ui_url}/files/test%C3%A9_1.txt> ; rel="item" ; type="text/plain"',
         f'<{ui_url}/files/test%C3%A9_2.txt> ; rel="item" ; type="text/plain"',
@@ -427,6 +428,10 @@ def test_signposting_serializer_minimal(running_app, minimal_record_to_dict):
                     },
                     {
                         "href": "https://127.0.0.1:5000/api/records/67890-fghij",
+                        "type": "application/vnd.crossref.unixsd+xml",
+                    },
+                    {
+                        "href": "https://127.0.0.1:5000/api/records/67890-fghij",
                         "type": "text/x-bibliography",
                     },
                 ],
@@ -475,6 +480,7 @@ def test_signposting_lvl1_serializer_minimal(running_app, minimal_record_to_dict
         f'<{api_url}> ; rel="describedby" ; type="application/vnd.inveniordm.v1.simple+csv"',
         f'<{api_url}> ; rel="describedby" ; type="application/x-bibtex"',
         f'<{api_url}> ; rel="describedby" ; type="application/x-dc+xml"',
+        f'<{api_url}> ; rel="describedby" ; type="application/vnd.crossref.unixsd+xml"',
         f'<{api_url}> ; rel="describedby" ; type="text/x-bibliography"',
         # No files
         # No license
