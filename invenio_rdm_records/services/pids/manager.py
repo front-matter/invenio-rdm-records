@@ -233,9 +233,6 @@ class PIDManager:
 
         provider = self._get_provider(scheme, pid_attrs["provider"])
         pid = provider.get(pid_attrs["identifier"])
-        current_app.logger.error(
-            f"Registering record {record['id']} with pid {pid} and scheme {scheme}"
-        )
         provider.register(pid, record=record, url=url)
 
     def discard(self, scheme, identifier, provider_name=None, soft_delete=False):
@@ -302,8 +299,5 @@ class PIDManager:
         """Create and reserve a PID for the given record, and update the record with the reserved PID."""
         pids = record.get("pids", {})
         provider_pid_dicts = self._get_providers(pids)
-        current_app.logger.error(
-            f"Manager: Creating and reserving DOI for record {record['id']} and pids {record.pids}"
-        )
         for provider, _ in provider_pid_dicts:
             provider.create_and_reserve(record)

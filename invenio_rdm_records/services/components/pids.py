@@ -158,7 +158,6 @@ class PIDsComponent(ServiceComponent):
         # unregistered PIDs.
         draft_pids = set(draft.get("pids", {}).keys())
         record_pids = set(record.get("pids", {}).keys()) if record else set()
-        current_app.logger.error(f"Deleting draft for {record_pids} and {draft_pids}")
 
         # Only remove PIDs that are in draft but not in published record
         pids_to_remove = {

@@ -38,9 +38,6 @@ class BlockedPrefixes:
 
     def __call__(self, record, identifier, provider, errors):
         """Validator call."""
-        current_app.logger.error(
-            f"Validating identifier '{identifier}' with provider '{provider}' and blocked prefixes {self.prefixes}"
-        )
         for p in self.prefixes:
             if identifier.startswith(p):
                 errors.append(

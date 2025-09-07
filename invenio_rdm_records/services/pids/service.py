@@ -71,7 +71,6 @@ class PIDsService(RecordService):
         """Resolve PID to a record (not draft)."""
         # FIXME: Should not use model class but go through provider?
         pid = PersistentIdentifier.get(pid_type=scheme, pid_value=id_)
-        current_app.logger.error(f"Resolve {pid}")
         record = None
         try:
             record = self.record_cls.get_record(pid.object_uuid)
@@ -111,7 +110,6 @@ class PIDsService(RecordService):
         draft.pids[scheme] = self._manager.create(draft, scheme, provider_name=provider)
 
         uow.register(RecordCommitOp(draft, indexer=self.indexer))
-        current_app.logger.error(f"Create {draft.id}")
         return self.result_item(
             self,
             identity,
@@ -127,7 +125,6 @@ class PIDsService(RecordService):
         record = self.record_cls.pid.resolve(id_, registered_only=False)
         self.require_permission(identity, "pid_update", record=record)
         self._manager.update(record, scheme)
-        current_app.logger.error(f"Update {record.id}")
 
         # draft and index do not need commit/refresh
 
@@ -144,7 +141,6 @@ class PIDsService(RecordService):
     def reserve(self, identity, id_, uow=None, expand=False):
         """Reserve PIDs of a record."""
         draft = self.draft_cls.pid.resolve(id_, registered_only=False)
-        current_app.logger.error(f"Reserve {draft.id}")
         self.require_permission(identity, "pid_manage", record=draft)
         self.pid_manager.validate(draft.pids, draft, raise_errors=True)
         self._manager.reserve_all(draft, draft.pids)
@@ -199,7 +195,7 @@ class PIDsService(RecordService):
         # no need to validate since the record class was already published
         pid_attrs = pid_record.pids.get(scheme)
         pid = pid_manager.read(scheme, pid_attrs["identifier"], pid_attrs["provider"])
-        current_app.logger.error(f"Register or update {pid}")
+
         # Determine landing page (use scheme specific if available)
         links = self.links_item_tpl.expand(identity, record)
         link_prefix = "parent" if parent else "self"
@@ -228,11 +224,9 @@ class PIDsService(RecordService):
 
         if pid.is_registered():
             self.require_permission(identity, "pid_update", record=record)
-            current_app.logger.error(f"Register {record.id}")
             pid_manager.update(pid_record, scheme, url=url)
         else:
             self.require_permission(identity, "pid_register", record=record)
-            current_app.logger.error(f"Update {record.id}")
             pid_manager.register(pid_record, scheme, url=url)
 
         # draft and index do not need commit/refresh
