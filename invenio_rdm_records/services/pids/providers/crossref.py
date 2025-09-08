@@ -111,9 +111,9 @@ class CrossrefClient:
             # Ensure we have a valid record ID
             record_id = getattr(record, "pid", None)
             if record_id and hasattr(record_id, "pid_value"):
-                return doi_format.format(prefix=prefix, id=record_id.pid_value)
+                return f"{prefix}/{record_id.pid_value}"
             elif hasattr(record, "id"):
-                return doi_format.format(prefix=prefix, id=record.id)
+                return f"{prefix}/{record.id}"
             else:
                 raise RuntimeError("Cannot generate DOI: record has no valid ID.")
 
@@ -274,9 +274,10 @@ class CrossrefPIDProvider(PIDProvider):
 
             # the `errors` field is only available when a 4xx error happened (not 500)
             for error in ex_json.get("errors", []):
+                field = error.get("source")
+                reason = error.get("title")
                 current_app.logger.error(
-                    "Crossref error (field: %(field)s): %(reason)s",
-                    {"field": error.get("source"), "reason": error.get("title")},
+                    f"Crossref error (field: {field}): {reason}",
                     exc_info=exception,
                 )
 
