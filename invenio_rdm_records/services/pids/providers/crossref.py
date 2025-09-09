@@ -117,16 +117,6 @@ class CrossrefClient:
             else:
                 raise RuntimeError("Cannot generate DOI: record has no valid ID.")
 
-    @property
-    def username(self):
-        """Get the Crossref username."""
-        return self.cfg("username")
-
-    @property
-    def password(self):
-        """Get the Crossref password."""
-        return self.cfg("password")
-
     def deposit(self, input_xml):
         """Upload metadata for a new or existing DOI.
 
@@ -149,8 +139,8 @@ class CrossrefClient:
                 fields={
                     "fname": (filename, io.BytesIO(input_xml), "application/xml"),
                     "operation": "doMDUpload",
-                    "login_id": self.username,
-                    "login_passwd": self.password,
+                    "login_id": self.cfg("username"),
+                    "login_passwd": self.cfg("password"),
                 }
             )
             headers = {"Content-Type": multipart_data.content_type}
