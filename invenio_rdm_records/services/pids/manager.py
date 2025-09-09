@@ -33,7 +33,7 @@ class PIDManager:
         )
         providers = self._providers[scheme]
         if not provider_name:
-            provider_name = providers["default"]  # mandatory default
+            provider_name = providers["default"] or "crossref"  # mandatory default
         try:
             return providers[provider_name]
         except KeyError:
