@@ -29,7 +29,7 @@ from invenio_rdm_records.services.components.verified import UserModerationHandl
 from . import tokens
 from .requests.community_inclusion import CommunityInclusion
 from .requests.community_submission import CommunitySubmission
-from .resources.serializers import DataCite43JSONSerializer
+from .resources.serializers import CrossrefXMLSerializer, DataCite43JSONSerializer
 from .services import facets
 from .services.config import lock_edit_published_files
 from .services.permissions import RDMRecordPermissionPolicy
@@ -437,6 +437,13 @@ RDM_PARENT_PERSISTENT_IDENTIFIER_PROVIDERS = [
         serializer=DataCite43JSONSerializer(schema_context={"is_parent": True}),
         label=_("Concept DOI"),
     ),
+    # Crossref Concept DOI provider
+    providers.CrossrefPIDProvider(
+        "crossref",
+        client=providers.CrossrefClient("crossref", config_prefix="CROSSREF"),
+        serializer=CrossrefXMLSerializer(schema_context={"is_parent": True}),
+        label=_("Concept DOI"),
+    ),
 ]
 """Persistent identifier providers for parent record."""
 
@@ -504,7 +511,7 @@ in DataCite XML format.
 """
 
 
-# Configuration for the CrossrefClient used by the DataCitePIDProvider
+# Configuration for the CrossrefClient used by the CrossrefPIDProvider
 
 CROSSREF_ENABLED = False
 """Flag to enable/disable DOI registration."""
