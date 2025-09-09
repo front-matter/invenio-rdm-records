@@ -9,17 +9,13 @@
 """Crossref DOI Provider."""
 
 import io
-import json
 import warnings
 from collections import ChainMap
-from json import JSONDecodeError
 from time import time
 
 import requests
 from commonmeta import (
     CrossrefError,
-    CrossrefNoContentError,
-    CrossrefServerError,
     validate_prefix,
 )
 from flask import current_app
@@ -243,34 +239,6 @@ class CrossrefPIDProvider(PIDProvider):
         )
         self.serializer = serializer or CrossrefXMLSerializer()
 
-    @staticmethod
-    def _log_errors(exception):
-        """Log errors from CrossrefError class."""
-        # CrossrefError will have the response msg as first arg
-        ex_txt = exception.args[0] or ""
-        if isinstance(exception, CrossrefNoContentError):
-            current_app.logger.error("Crossref no content error", exc_info=exception)
-        elif isinstance(exception, CrossrefServerError):
-            current_app.logger.error(
-                "Crossref internal server error", exc_info=exception
-            )
-        else:
-            # Client error 4xx status code
-            try:
-                ex_json = json.loads(ex_txt)
-            except JSONDecodeError:
-                current_app.logger.error("Unknown Crossref error", exc_info=exception)
-                return
-
-            # the `errors` field is only available when a 4xx error happened (not 500)
-            for error in ex_json.get("errors", []):
-                field = error.get("source")
-                reason = error.get("title")
-                current_app.logger.error(
-                    f"Crossref error (field: {field}): {reason}",
-                    exc_info=exception,
-                )
-
     def create(self, record, pid_value=None, status=None, **kwargs):
         """Get or create the PID with given value for the given record.
 
@@ -318,13 +286,6 @@ class CrossrefPIDProvider(PIDProvider):
         """Determine if crossref is enabled or not."""
         return app.config.get("CROSSREF_ENABLED", False)
 
-    def is_managed(self):
-        """Determine if the PID is managed by Crossref.
-
-        This initial version expects the PID value to be provided by the user.
-        """
-        return False
-
     def can_modify(self, pid, **kwargs):
         """Checks if the PID can be modified."""
         return not pid.is_registered()
@@ -358,7 +319,6 @@ class CrossrefPIDProvider(PIDProvider):
             current_app.logger.error(
                 f"CrossrefPIDProvider.register: Crossref API error when registering DOI {pid.pid_value}: {type(e).__name__}: {str(e)}"
             )
-            self._log_errors(e)
             return False
         except Exception as e:
             current_app.logger.error(
@@ -398,7 +358,6 @@ class CrossrefPIDProvider(PIDProvider):
             current_app.logger.error(
                 f"CrossrefPIDProvider.update: Crossref API error when updating DOI {pid.pid_value}: {type(e).__name__}: {str(e)}"
             )
-            self._log_errors(e)
             return False
         except Exception as e:
             current_app.logger.error(
@@ -424,7 +383,10 @@ class CrossrefPIDProvider(PIDProvider):
                     f"CrossrefPIDProvider.delete: Not implemented - deleting registered DOI {pid.pid_value}"
                 )
         except CrossrefError as e:
-            self._log_errors(e)
+            current_app.logger.error(
+                f"CrossrefPIDProvider.delete: Unexpected error when deleting DOI {pid.pid_value}: {str(e)}",
+                exc_info=e,
+            )
             return False
         except Exception as e:
             current_app.logger.error(
