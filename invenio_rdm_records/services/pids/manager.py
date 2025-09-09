@@ -28,6 +28,9 @@ class PIDManager:
 
     def _get_provider(self, scheme, provider_name=None):
         """Get a provider."""
+        current_app.logger.error(
+            f"Getting provider {provider_name} for scheme: {scheme} from {self._providers}"
+        )
         providers = self._providers[scheme]
         if not provider_name:
             provider_name = providers["default"]  # mandatory default
