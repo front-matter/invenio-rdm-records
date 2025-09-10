@@ -254,7 +254,7 @@ class CrossrefPIDProvider(PIDProvider):
             instance.
         """
         current_app.logger.error(
-            f"Creating doi {pid_value} for record: {record.id} and status: {status} and kwargs: {kwargs}"
+            f"Creating doi {pid_value} for record: {record} and status: {status} and kwargs: {kwargs}"
         )
         if pid_value is None:
             raise ValueError(_("You must provide a doi value."))
