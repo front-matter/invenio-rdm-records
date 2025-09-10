@@ -250,7 +250,7 @@ class CrossrefPIDProvider(PIDProvider):
         current_app.logger.error(
             f"Generating DOI for record: {record} with kwargs: {kwargs}"
         )
-        return self.client.generate_doi(record, kwargs)
+        return self.client.generate_doi(record, **kwargs)
 
     @classmethod
     def is_enabled(cls, app):

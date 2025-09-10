@@ -115,6 +115,7 @@ class PIDsComponent(ServiceComponent):
             pids_data = data["pids"]
 
         self.service.pids.pid_manager.validate(pids_data, record, errors)
+        current_app.logger.error(f"Creating draft {record.id} with PIDs: {pids_data}")
         record.pids = pids_data
 
     def update_draft(self, identity, data=None, record=None, errors=None):
@@ -130,6 +131,7 @@ class PIDsComponent(ServiceComponent):
                 data["pids"]["doi"]["provider"] = "crossref"
             pids_data = data["pids"]
 
+        current_app.logger.error(f"Updating draft {record.id} with PIDs: {pids_data}")
         required_schemes = set(self.service.config.pids_required)
 
         # if DOI is not required in an instance check validate allowed providers
@@ -239,6 +241,8 @@ class PIDsComponent(ServiceComponent):
 
         # Set the resulting PIDs on the record
         record.pids = pids
+
+        current_app.logger.error(f"Publish record {record.id} with PIDs: {pids}")
 
         # Async register/update tasks after transaction commit.
         for scheme in pids.keys():
