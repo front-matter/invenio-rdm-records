@@ -82,7 +82,7 @@ class CrossrefClient:
 
         return True
 
-    def generate_doi(self, record):
+    def generate_doi(self, record, **kwargs):
         """Generate a DOI.
 
         :param record: The record for which to generate a DOI.
@@ -92,16 +92,18 @@ class CrossrefClient:
         if not self.check_credentials():
             raise RuntimeError("Crossref client credentials not properly configured.")
 
-        prefixes = self.cfg("prefixes", [])
+        if kwargs.get("prefix", None):
+            prefix = kwargs["prefix"]
+        else:
+            prefixes = self.cfg("prefixes", [])
+            prefix = str(prefixes[0]) if len(prefixes) > 0 else None
 
-        # Use the first prefix for generation
-        new_prefix = record.get("pids", {})
-        current_app.logger.error(
-            f"Picking prefix from: {prefixes} for record: {record.id} and new prefix: {new_prefix}"
-        )
-        prefix = str(prefixes[0]) if prefixes else None
         if not prefix:
             raise RuntimeError("Invalid DOI prefix configured.")
+
+        current_app.logger.error(
+            f"Generating DOI for record: {record.id} with prefix: {prefix}"
+        )
 
         doi_format = self.cfg("format", "{prefix}/{id}")
 
@@ -243,50 +245,50 @@ class CrossrefPIDProvider(PIDProvider):
         )
         self.serializer = serializer or CrossrefXMLSerializer()
 
-    # def create(self, record, pid_value=None, status=None, **kwargs):
-    #     """Get or create the PID with given value for the given record.
+    def create(self, record, pid_value=None, status=None, **kwargs):
+        """Get or create the DOI with given value for the given record.
 
-    #     :param record: the record to create the PID for.
-    #     :param pid_value: the PID value.
-    #     :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
-    #         instance.
-    #     """
-    #     if pid_value is None:
-    #         raise ValueError(_("You must provide a pid value."))
+        :param record: the record to create the DOI for.
+        :param pid_value: the DOI value.
+        :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
+            instance.
+        """
+        if pid_value is None:
+            raise ValueError(_("You must provide a doi value."))
+        current_app.logger.error(
+            f"Creating doi {pid_value} for record: {record.id} and status: {status} and kwargs: {kwargs}"
+        )
+        try:
+            pid = self.get(pid_value)
+        except PIDDoesNotExistError:
+            # not existing, create a new one
+            pid = PersistentIdentifier.create(
+                self.pid_type,
+                pid_value,
+                pid_provider=self.name,
+                status=status or self.default_status,
+            )
+            return pid
 
-    #     try:
-    #         pid = self.get(pid_value)
-    #     except PIDDoesNotExistError:
-    #         # not existing, create a new one
-    #         pid = PersistentIdentifier.create(
-    #             self.pid_type,
-    #             pid_value,
-    #             pid_provider=self.name,
-    #             object_type="rec",
-    #             object_uuid=record.id,
-    #             status=status or self.default_status,
-    #         )
-    #         return pid
-
-    #     # re-activate if previously deleted
-    #     if pid.is_deleted():
-    #         current_app.logger.debug(
-    #             f"CrossrefPIDProvider.create: Reactivating deleted PID: {pid.pid_value}"
-    #         )
-    #         pid.sync_status(PIDStatus.NEW)
-    #         return pid
-    #     else:
-    #         current_app.logger.debug(
-    #             f"CrossrefPIDProvider.create: PID already exists: {pid.pid_value}"
-    #         )
-    #         raise PIDAlreadyExists(self.pid_type, pid_value)
+        # re-activate if previously deleted
+        if pid.is_deleted():
+            current_app.logger.debug(
+                f"CrossrefPIDProvider.create: Reactivating deleted PID: {pid.pid_value}"
+            )
+            pid.sync_status(PIDStatus.NEW)
+            return pid
+        else:
+            current_app.logger.debug(
+                f"CrossrefPIDProvider.create: PID already exists: {pid.pid_value}"
+            )
+            raise PIDAlreadyExists(self.pid_type, pid_value)
 
     def generate_id(self, record, **kwargs):
         """Generate a unique DOI, delegating to the client."""
         current_app.logger.error(
             f"Generating DOI for record: {record} with kwargs: {kwargs}"
         )
-        return self.client.generate_doi(record)
+        return self.client.generate_doi(record, kwargs)
 
     @classmethod
     def is_enabled(cls, app):
