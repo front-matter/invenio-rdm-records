@@ -287,7 +287,9 @@ class ParentPIDsComponent(ServiceComponent):
         current_pids = copy(record.parent.get("pids", {}))
         current_schemes = set(current_pids.keys())
         required_schemes = set(self.service.config.parent_pids_required)
-
+        current_app.logger.error(
+            f"Publish parent record {record.id} with PIDs: {current_pids}"
+        )
         # Check if a doi was added in the draft and create a parent DOI independently if
         # doi is required.
         if draft.get("pids", {}).get("doi"):
