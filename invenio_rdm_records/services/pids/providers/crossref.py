@@ -253,9 +253,9 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
             instance.
         """
-        current_app.logger.error(
-            f"Creating doi {pid_value} for record: {record} and status: {status} and kwargs: {kwargs}"
-        )
+        if pid_value is None:
+            pid_value = record.get("pids", {}).get("doi", {}).get("identifier", None)
+        current_app.logger.error(f"Creating doi {pid_value} for record: {record.id}")
         if pid_value is None:
             raise ValueError(_("You must provide a doi value."))
 
