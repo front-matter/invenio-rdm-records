@@ -95,7 +95,6 @@ class CrossrefClient:
         prefixes = self.cfg("prefixes", [])
 
         # Use the first prefix for generation
-        current_app.logger.error(f"Generating DOI for record: {record}")
         new_prefix = record.get("pids", {})
         current_app.logger.error(
             f"Picking prefix from: {prefixes} for record: {record.id} and new prefix: {new_prefix}"
@@ -284,6 +283,9 @@ class CrossrefPIDProvider(PIDProvider):
 
     def generate_id(self, record, **kwargs):
         """Generate a unique DOI, delegating to the client."""
+        current_app.logger.error(
+            f"Generating DOI for record: {record} with kwargs: {kwargs}"
+        )
         return self.client.generate_doi(record)
 
     @classmethod
@@ -452,3 +454,13 @@ class CrossrefPIDProvider(PIDProvider):
             return False, [
                 {"field": "general", "messages": ["Validation error occurred"]}
             ]
+
+    def create_and_reserve(self, record, **kwargs):
+        """Create and reserve a DOI for the given record, and update the record with the reserved DOI."""
+        if "doi" not in record.pids:
+            pid = self.create(record)
+            self.reserve(pid, record=record)
+            pid_attrs = {"identifier": pid.pid_value, "provider": self.name}
+            if self.client:
+                pid_attrs["client"] = self.client.name
+            record.pids["doi"] = pid_attrs
