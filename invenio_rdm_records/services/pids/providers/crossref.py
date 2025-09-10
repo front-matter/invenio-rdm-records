@@ -95,6 +95,10 @@ class CrossrefClient:
         prefixes = self.cfg("prefixes", [])
 
         # Use the first prefix for generation
+        new_prefix = record.get("pids", {}).get("doi", {}).get("identifier", None)
+        current_app.logger.error(
+            f"Picking prefix from: {prefixes} for record: {record.id} and new prefix: {new_prefix}"
+        )
         prefix = str(prefixes[0]) if prefixes else None
         if not prefix:
             raise RuntimeError("Invalid DOI prefix configured.")

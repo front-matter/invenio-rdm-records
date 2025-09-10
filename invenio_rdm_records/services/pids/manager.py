@@ -144,7 +144,7 @@ class PIDManager:
         provider = self._get_provider(scheme, provider_name)
         pid_attrs = {}
         current_app.logger.error(
-            f"Creating pid {identifier} for scheme: {scheme} and provider: {provider_name}"
+            f"Creating pid {identifier} for scheme: {scheme} and draft: {draft.id}"
         )
         if identifier is not None:
             try:
