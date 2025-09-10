@@ -95,7 +95,7 @@ class CrossrefClient:
         prefixes = self.cfg("prefixes", [])
 
         # Use the first prefix for generation
-        new_prefix = record.get("pids", {}).get("doi", {}).get("identifier", None)
+        new_prefix = record.get("pids", {})
         current_app.logger.error(
             f"Picking prefix from: {prefixes} for record: {record.id} and new prefix: {new_prefix}"
         )
