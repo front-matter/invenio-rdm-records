@@ -449,13 +449,15 @@ RDM_PARENT_PERSISTENT_IDENTIFIER_PROVIDERS = [
 
 RDM_PARENT_PERSISTENT_IDENTIFIERS = {
     "doi": {
-        "providers": ["datacite"],
+        "providers": ["datacite", "crossref"],
         "required": True,
-        "condition": lambda rec: rec.pids.get("doi", {}).get("provider") == "datacite",
+        "condition": lambda rec: rec.pids.get("doi", {}).get("provider")
+        in ["datacite", "crossref"],
         "label": _("Concept DOI"),
         "validator": idutils.is_doi,
         "normalizer": idutils.normalize_doi,
-        "is_enabled": providers.DataCitePIDProvider.is_enabled,
+        "is_enabled": providers.DataCitePIDProvider.is_enabled
+        or providers.CrossrefPIDProvider.is_enabled,
     },
 }
 """Persistent identifiers for parent record."""
