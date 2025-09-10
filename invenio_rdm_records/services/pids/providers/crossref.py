@@ -245,45 +245,6 @@ class CrossrefPIDProvider(PIDProvider):
         )
         self.serializer = serializer or CrossrefXMLSerializer()
 
-    def create(self, record, pid_value=None, status=None, **kwargs):
-        """Get or create the DOI with given value for the given record.
-
-        :param record: the record to create the DOI for.
-        :param pid_value: the DOI value.
-        :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
-            instance.
-        """
-        if pid_value is None:
-            pid_value = record.get("pids", {}).get("doi", {}).get("identifier", None)
-        current_app.logger.error(f"Creating doi {pid_value} for record: {record}")
-        if pid_value is None:
-            raise ValueError(_("You must provide a doi value."))
-
-        try:
-            pid = self.get(pid_value)
-        except PIDDoesNotExistError:
-            # not existing, create a new one
-            pid = PersistentIdentifier.create(
-                self.pid_type,
-                pid_value,
-                pid_provider=self.name,
-                status=status or self.default_status,
-            )
-            return pid
-
-        # re-activate if previously deleted
-        if pid.is_deleted():
-            current_app.logger.debug(
-                f"CrossrefPIDProvider.create: Reactivating deleted PID: {pid.pid_value}"
-            )
-            pid.sync_status(PIDStatus.NEW)
-            return pid
-        else:
-            current_app.logger.debug(
-                f"CrossrefPIDProvider.create: PID already exists: {pid.pid_value}"
-            )
-            raise PIDAlreadyExists(self.pid_type, pid_value)
-
     def generate_id(self, record, **kwargs):
         """Generate a unique DOI, delegating to the client."""
         current_app.logger.error(
