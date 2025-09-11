@@ -196,7 +196,6 @@ class PIDManager:
         # Create without an identifier value provided (only the scheme)
         for scheme in schemes or []:
             result[scheme] = self.create(draft, scheme)
-        current_app.logger.error(f"Generating DOI for draft {draft.id}: {result}")
         return result
 
     def update(self, record, scheme, url=None):

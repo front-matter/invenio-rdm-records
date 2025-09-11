@@ -80,7 +80,6 @@ class PIDProvider:
         :returns: A :class:`invenio_pidstore.models.base.PersistentIdentifier`
             instance.
         """
-        current_app.logger.error(f"Creating pid {pid_value} for record: {record.id}")
         if pid_value is None:
             if not self.is_managed():
                 raise ValueError(_("You must provide a pid value."))

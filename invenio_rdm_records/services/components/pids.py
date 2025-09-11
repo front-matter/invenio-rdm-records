@@ -115,7 +115,6 @@ class PIDsComponent(ServiceComponent):
             pids_data = data["pids"]
 
         self.service.pids.pid_manager.validate(pids_data, record, errors)
-        current_app.logger.error(f"Creating draft {record.id} with PIDs: {pids_data}")
         record.pids = pids_data
 
     def update_draft(self, identity, data=None, record=None, errors=None):
@@ -131,7 +130,6 @@ class PIDsComponent(ServiceComponent):
                 data["pids"]["doi"]["provider"] = "crossref"
             pids_data = data["pids"]
 
-        current_app.logger.error(f"Updating draft {record.id} with PIDs: {pids_data}")
         required_schemes = set(self.service.config.pids_required)
 
         # if DOI is not required in an instance check validate allowed providers
@@ -242,7 +240,7 @@ class PIDsComponent(ServiceComponent):
         # Set the resulting PIDs on the record
         record.pids = pids
 
-        current_app.logger.error(f"Publish record {record.id} with PIDs: {pids}")
+        current_app.logger.error(f"Publishing record {record.id} with PIDs {pids}")
 
         # Async register/update tasks after transaction commit.
         for scheme in pids.keys():
@@ -312,7 +310,12 @@ class ParentPIDsComponent(ServiceComponent):
             pids=current_pids,
             schemes=missing_required_schemes,
         )
-        current_app.logger.error(f"Publish parent record {record.id} with PIDs: {pids}")
+        current_app.logger.error(
+            f"Publishing record {record.id} with PIDs: {record.get('pids', {})}"
+        )
+        current_app.logger.error(
+            f"Publishing parent record {record.parent.id} with PIDs: {pids}"
+        )
         # Reserve all created PIDs and store them on the parent record
         self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
         record.parent.pids = pids

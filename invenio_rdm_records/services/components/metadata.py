@@ -31,9 +31,6 @@ class MetadataComponent(ServiceComponent):
 
     def publish(self, identity, draft=None, record=None, **kwargs):
         """Update draft metadata."""
-        current_app.logger.error(
-            f"Publishing record {record.id} with metadata: {record} and kwargs: {kwargs}"
-        )
         setattr(record, self.field, draft.get(self.field, {}))
 
     def edit(self, identity, draft=None, record=None, **kwargs):
