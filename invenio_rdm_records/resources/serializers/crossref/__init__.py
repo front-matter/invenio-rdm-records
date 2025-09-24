@@ -44,11 +44,12 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
 
         :param record: Record instance.
         """
-        current_app.logger.error(
-            f"CrossrefXMLSerializer.dump_obj: record type = {type(record)}"
-        )
         if isinstance(record, ChainObject):
             meta = record._child
+            parent = record._parent
+            current_app.logger.error(
+                f"Record parent: {parent.id} with pids {parent.pids} for record {meta.id} with pids {meta.pids}"
+            )
         else:
             meta = record
 
