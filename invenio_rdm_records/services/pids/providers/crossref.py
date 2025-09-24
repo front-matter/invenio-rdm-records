@@ -278,7 +278,7 @@ class CrossrefPIDProvider(PIDProvider):
             # register parent record
             if isinstance(record, ChainObject):
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata} and custom_fields {record.parent.custom_fields}"
+                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata}"
                 )
                 doc = self.serializer.dump_obj(record._parent)
             # register record
@@ -307,7 +307,7 @@ class CrossrefPIDProvider(PIDProvider):
             # update parent record
             if isinstance(record, ChainObject):
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata} and custom_fields {record.parent.custom_fields}"
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata}"
                 )
                 doc = self.serializer.dump_obj(record._parent)
             # update record
