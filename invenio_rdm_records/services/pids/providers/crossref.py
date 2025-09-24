@@ -268,13 +268,10 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is registered successfully.
         """
-        current_app.logger.debug(
+        current_app.logger.error(
             f"CrossrefPIDProvider.register: pid {pid} for record {record}"
         )
         local_success = super().register(pid)
-        current_app.logger.error(
-            f"CrossrefPIDProvider.register: local_success {local_success}"
-        )
         if not local_success:
             return False
 
