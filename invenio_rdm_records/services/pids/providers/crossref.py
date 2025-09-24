@@ -275,20 +275,18 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
+            # register parent record
             if isinstance(record, ChainObject):
-                child = record._child
-                parent = record._parent
+                current_app.logger.error(
+                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata} and custom_fields {record.parent.custom_fields}"
+                )
+                doc = self.serializer.dump_obj(record._parent)
+            # register record
             else:
-                child = record
-                parent = None
-            current_app.logger.error(
-                f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {child.id} and parent {parent.id if parent else None}"
-            )
-            doc = self.serializer.dump_obj(child)
-            current_app.logger.error(
-                f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
-            )
-
+                current_app.logger.error(
+                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id} and pids {record.pids}"
+                )
+                doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
         except Exception as e:
@@ -306,19 +304,18 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is updated successfully.
         """
         try:
+            # update parent record
             if isinstance(record, ChainObject):
-                child = record._child
-                parent = record._parent
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and parent {parent.id} and pids {parent.pids}"
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata} and custom_fields {record.parent.custom_fields}"
                 )
-                doc = self.serializer.dump_obj(parent)
+                doc = self.serializer.dump_obj(record._parent)
+            # update record
             else:
-                child = record
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and pids {child.pids}"
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {record.id} and pids {record.pids}"
                 )
-                doc = self.serializer.dump_obj(child)
+                doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
         except Exception as e:
