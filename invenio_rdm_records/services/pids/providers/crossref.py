@@ -15,7 +15,6 @@ from time import time
 
 import requests
 from commonmeta import (
-    CrossrefError,
     validate_prefix,
 )
 from flask import current_app

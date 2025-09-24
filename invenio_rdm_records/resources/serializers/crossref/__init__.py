@@ -21,6 +21,8 @@ from flask import current_app
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
+from ....utils import ChainObject
+
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
     """JSON based Crossref XML serializer for records."""
@@ -45,6 +47,11 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         current_app.logger.error(
             f"CrossrefXMLSerializer.dump_obj: record type = {type(record)}"
         )
+        if isinstance(record, ChainObject):
+            meta = record._child
+        else:
+            meta = record
+
         depositor = current_app.config.get("CROSSREF_DEPOSITOR", None)
         email = current_app.config.get("CROSSREF_EMAIL", None)
         registrant = current_app.config.get("CROSSREF_REGISTRANT", None)
@@ -53,7 +60,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         # Reasons for failing to convert to Crossref XML include missing required metadata
         # and type not supported by Crossref.
         metadata = Metadata(
-            record,
+            meta,
             via="inveniordm",
             depositor=depositor,
             email=email,
