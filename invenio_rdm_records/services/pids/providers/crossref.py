@@ -275,7 +275,16 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
-            doc = self.serializer.dump_obj(record)
+            if isinstance(record, ChainObject):
+                child = record._child
+                parent = record._parent
+            else:
+                child = record
+                parent = None
+            current_app.logger.error(
+                f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {child.id} and parent {parent.id if parent else None}"
+            )
+            doc = self.serializer.dump_obj(child)
             current_app.logger.error(
                 f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
             )
@@ -296,29 +305,19 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is updated successfully.
         """
-        current_app.logger.error(
-            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
-        )
-        # Check if record is restricted
-        if isinstance(record, ChainObject):
-            access_level = record._child["access"]["record"]
-        else:
-            access_level = record["access"]["record"]
-
-        current_app.logger.debug(
-            f"CrossrefPIDProvider.update: Record access level: {access_level}"
-        )
-
-        if access_level == "restricted":
-            current_app.logger.debug(
-                "CrossrefPIDProvider.update: Skipping update - record is restricted"
-            )
-            return False
-
         try:
-            doc = self.serializer.dump_obj(record)
+            if isinstance(record, ChainObject):
+                child = record._child
+                parent = record._parent
+            else:
+                child = record
+                parent = None
             current_app.logger.error(
-                f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
+                f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and parent {parent.id if parent else None}"
+            )
+            doc = self.serializer.dump_obj(child)
+            current_app.logger.error(
+                f"CrossrefPIDProvider.update: XML serialization successful, size: {len(doc) if doc else 0} chars"
             )
             self.client.deposit(doc)
             return True

@@ -70,7 +70,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         data = convert_crossref_xml(metadata)
         if data is None:
             current_app.logger.error(
-                "Could not convert metadata to Crossref XML: %s", metadata.id
+                f"Could not convert metadata to Crossref XML: {metadata.id}"
             )
             return ""
 
