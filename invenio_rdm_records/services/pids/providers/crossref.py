@@ -279,6 +279,9 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
+            current_app.logger.debug(
+                f"CrossrefPIDProvider.register pid {pid.pid_value}: {record}"
+            )
             doc = self.serializer.dump_obj(record)
             current_app.logger.debug(
                 f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
