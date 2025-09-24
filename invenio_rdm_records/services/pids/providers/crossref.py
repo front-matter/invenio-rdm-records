@@ -268,20 +268,17 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is registered successfully.
         """
-        local_success = super().register(pid)
         current_app.logger.debug(
-            f"CrossrefPIDProvider.register: Local registration success: {local_success}"
+            f"CrossrefPIDProvider.register: pid {pid} for record {record}"
+        )
+        local_success = super().register(pid)
+        current_app.logger.error(
+            f"CrossrefPIDProvider.register: local_success {local_success}"
         )
         if not local_success:
-            current_app.logger.error(
-                "CrossrefPIDProvider.register: Failed at local registration step"
-            )
             return False
 
         try:
-            current_app.logger.debug(
-                f"CrossrefPIDProvider.register pid {pid.pid_value}: {record}"
-            )
             doc = self.serializer.dump_obj(record)
             current_app.logger.debug(
                 f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
@@ -289,11 +286,6 @@ class CrossrefPIDProvider(PIDProvider):
 
             self.client.deposit(doc)
             return True
-        except CrossrefError as e:
-            current_app.logger.error(
-                f"CrossrefPIDProvider.register: Crossref API error when registering DOI {pid.pid_value}: {type(e).__name__}: {str(e)}"
-            )
-            return False
         except Exception as e:
             current_app.logger.error(
                 f"CrossrefPIDProvider.register: Unexpected error when registering DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
@@ -328,11 +320,6 @@ class CrossrefPIDProvider(PIDProvider):
             doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
-        except CrossrefError as e:
-            current_app.logger.error(
-                f"CrossrefPIDProvider.update: Crossref API error when updating DOI {pid.pid_value}: {type(e).__name__}: {str(e)}"
-            )
-            return False
         except Exception as e:
             current_app.logger.error(
                 f"CrossrefPIDProvider.update: Unexpected error when updating DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
@@ -356,12 +343,6 @@ class CrossrefPIDProvider(PIDProvider):
                 current_app.logger.error(
                     f"CrossrefPIDProvider.delete: Not implemented - deleting registered DOI {pid.pid_value}"
                 )
-        except CrossrefError as e:
-            current_app.logger.error(
-                f"CrossrefPIDProvider.delete: Unexpected error when deleting DOI {pid.pid_value}: {str(e)}",
-                exc_info=e,
-            )
-            return False
         except Exception as e:
             current_app.logger.error(
                 f"CrossrefPIDProvider.delete: Unexpected error when deleting DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
