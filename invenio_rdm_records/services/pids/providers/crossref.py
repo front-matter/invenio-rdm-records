@@ -269,7 +269,7 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is registered successfully.
         """
         current_app.logger.error(
-            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.metadata}"
+            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
         )
         local_success = super().register(pid)
         if not local_success:
@@ -277,7 +277,7 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
-            current_app.logger.debug(
+            current_app.logger.error(
                 f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
             )
 
@@ -298,7 +298,7 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is updated successfully.
         """
         current_app.logger.error(
-            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.metadata}"
+            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
         )
         # Check if record is restricted
         if isinstance(record, ChainObject):
@@ -318,6 +318,9 @@ class CrossrefPIDProvider(PIDProvider):
 
         try:
             doc = self.serializer.dump_obj(record)
+            current_app.logger.error(
+                f"CrossrefPIDProvider.register: XML serialization successful, size: {len(doc) if doc else 0} chars"
+            )
             self.client.deposit(doc)
             return True
         except Exception as e:
