@@ -42,7 +42,9 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
 
         :param record: Record instance.
         """
-        meta = vars(record)
+        current_app.logger.error(
+            f"CrossrefXMLSerializer.dump_obj: record type = {type(record)}"
+        )
         depositor = current_app.config.get("CROSSREF_DEPOSITOR", None)
         email = current_app.config.get("CROSSREF_EMAIL", None)
         registrant = current_app.config.get("CROSSREF_REGISTRANT", None)
@@ -51,7 +53,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         # Reasons for failing to convert to Crossref XML include missing required metadata
         # and type not supported by Crossref.
         metadata = Metadata(
-            meta,
+            record,
             via="inveniordm",
             depositor=depositor,
             email=email,
