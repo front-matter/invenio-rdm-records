@@ -309,16 +309,16 @@ class CrossrefPIDProvider(PIDProvider):
             if isinstance(record, ChainObject):
                 child = record._child
                 parent = record._parent
+                current_app.logger.error(
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and parent {parent.id} and pids {parent.pids}"
+                )
+                doc = self.serializer.dump_obj(parent)
             else:
                 child = record
-                parent = None
-            current_app.logger.error(
-                f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and parent {parent.id if parent else None}"
-            )
-            doc = self.serializer.dump_obj(child)
-            current_app.logger.error(
-                f"CrossrefPIDProvider.update: XML serialization successful, size: {len(doc) if doc else 0} chars"
-            )
+                current_app.logger.error(
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {child.id} and pids {child.pids}"
+                )
+                doc = self.serializer.dump_obj(child)
             self.client.deposit(doc)
             return True
         except Exception as e:
