@@ -269,7 +269,7 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is registered successfully.
         """
         current_app.logger.error(
-            f"CrossrefPIDProvider.register: pid {pid} for record {record}"
+            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.metadata}"
         )
         local_success = super().register(pid)
         if not local_success:
@@ -297,6 +297,9 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is updated successfully.
         """
+        current_app.logger.error(
+            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.metadata}"
+        )
         # Check if record is restricted
         if isinstance(record, ChainObject):
             access_level = record._child["access"]["record"]
