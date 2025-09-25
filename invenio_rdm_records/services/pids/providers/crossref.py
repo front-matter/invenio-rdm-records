@@ -284,6 +284,15 @@ class CrossrefPIDProvider(PIDProvider):
                 doi = f"{child_prefix}/{parent_suffix}"
                 meta = record._child
                 meta.pids["doi"]["identifier"] = doi
+
+                # Generate parent/child versioning relationships
+                meta.metadata["related_identifiers"].append(
+                    {
+                        "relatedIdentifier": record._child.pids["doi"]["identifier"],
+                        "relationType": "HasVersion",
+                        "relatedIdentifierType": "doi",
+                    }
+                )
                 current_app.logger.error(
                     f"CrossrefPIDProvider.register: pid {doi} for parent {record._parent.id}"
                 )
@@ -320,6 +329,15 @@ class CrossrefPIDProvider(PIDProvider):
                 doi = f"{child_prefix}/{parent_suffix}"
                 meta = record._child
                 meta.pids["doi"]["identifier"] = doi
+
+                # Generate parent/child versioning relationships
+                meta.metadata["related_identifiers"].append(
+                    {
+                        "relatedIdentifier": record._child.pids["doi"]["identifier"],
+                        "relationType": "HasVersion",
+                        "relatedIdentifierType": "doi",
+                    }
+                )
                 current_app.logger.error(
                     f"CrossrefPIDProvider.update: pid {doi} for parent {record._parent.id}"
                 )

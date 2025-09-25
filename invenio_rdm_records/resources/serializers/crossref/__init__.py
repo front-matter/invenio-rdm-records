@@ -21,8 +21,6 @@ from flask import current_app
 from flask_resources import BaseListSchema, MarshmallowSerializer
 from flask_resources.serializers import SimpleSerializer
 
-from ....utils import ChainObject
-
 
 class CrossrefXMLSerializer(MarshmallowSerializer):
     """JSON based Crossref XML serializer for records."""
