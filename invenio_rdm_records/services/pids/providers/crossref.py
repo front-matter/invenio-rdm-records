@@ -260,6 +260,44 @@ class CrossrefPIDProvider(PIDProvider):
         """Checks if the PID can be modified."""
         return not pid.is_registered()
 
+    def _prepare(self, record, pid):
+        """Prepare record for Crossref registration/update.
+
+        :param record: Record or ChainObject to prepare
+        :param pid: PID being processed
+        :returns: prepared_record
+        """
+        if isinstance(record, ChainObject):
+            # Handle parent record with versioning relationships
+            child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+            parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
+            doi = f"{child_prefix}/{parent_suffix}"
+
+            meta = record._child
+            meta.pids["doi"]["identifier"] = doi
+
+            # Add versioning relationship
+            related_identifiers = meta.metadata.get("related_identifiers", [])
+            related_identifiers.append(
+                {
+                    "relatedIdentifier": record._child.pids["doi"]["identifier"],
+                    "relationType": "HasVersion",
+                    "relatedIdentifierType": "doi",
+                }
+            )
+            meta.metadata["related_identifiers"] = related_identifiers
+
+            current_app.logger.error(
+                f"Processing parent record - PID: {doi}, Parent ID: {record._parent.id}"
+            )
+            return meta
+        else:
+            # Handle regular record
+            current_app.logger.error(
+                f"Processing record - PID: {pid.pid_value}, Record ID: {record.id}"
+            )
+            return record
+
     def register(self, pid, record, **kwargs):
         """Register metadata with the Crossref XML API.
 
@@ -267,47 +305,18 @@ class CrossrefPIDProvider(PIDProvider):
         :param record: the record metadata for the DOI.
         :returns: `True` if is registered successfully.
         """
-        current_app.logger.error(
-            f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
-        )
         local_success = super().register(pid)
         if not local_success:
             return False
 
         try:
-            # register parent record
-            if isinstance(record, ChainObject):
-                # Workaround to ensure parent DOI (suffix generated automatically)
-                # uses the same prefix as child DOI as Crossref PID provider supports multiple prefixes.
-                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
-                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
-                doi = f"{child_prefix}/{parent_suffix}"
-                meta = record._child
-                meta.pids["doi"]["identifier"] = doi
-
-                # Generate parent/child versioning relationships
-                meta.metadata["related_identifiers"].append(
-                    {
-                        "relatedIdentifier": record._child.pids["doi"]["identifier"],
-                        "relationType": "HasVersion",
-                        "relatedIdentifierType": "doi",
-                    }
-                )
-                current_app.logger.error(
-                    f"CrossrefPIDProvider.register: pid {doi} for parent {record._parent.id}"
-                )
-                doc = self.serializer.dump_obj(meta)
-            # register record
-            else:
-                current_app.logger.error(
-                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
-                )
-                doc = self.serializer.dump_obj(record)
+            prepared_record = self._prepare(record, pid)
+            doc = self.serializer.dump_obj(prepared_record)
             self.client.deposit(doc)
             return True
         except Exception as e:
             current_app.logger.error(
-                f"CrossrefPIDProvider.register: Unexpected error when registering DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
+                f"CrossrefPIDProvider.register: Error registering DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
                 exc_info=e,
             )
             return False
@@ -320,39 +329,13 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is updated successfully.
         """
         try:
-            # update parent record
-            if isinstance(record, ChainObject):
-                # Workaround to ensure parent DOI (suffix generated automatically)
-                # uses the same prefix as child DOI as Crossref PID provider supports multiple prefixes.
-                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
-                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
-                doi = f"{child_prefix}/{parent_suffix}"
-                meta = record._child
-                meta.pids["doi"]["identifier"] = doi
-
-                # Generate parent/child versioning relationships
-                meta.metadata["related_identifiers"].append(
-                    {
-                        "relatedIdentifier": record._child.pids["doi"]["identifier"],
-                        "relationType": "HasVersion",
-                        "relatedIdentifierType": "doi",
-                    }
-                )
-                current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {doi} for parent {record._parent.id}"
-                )
-                doc = self.serializer.dump_obj(meta)
-            # update record
-            else:
-                current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {record.id}"
-                )
-                doc = self.serializer.dump_obj(record)
+            prepared_record = self._prepare(record, pid)
+            doc = self.serializer.dump_obj(prepared_record)
             self.client.deposit(doc)
             return True
         except Exception as e:
             current_app.logger.error(
-                f"CrossrefPIDProvider.update: Unexpected error when updating DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
+                f"CrossrefPIDProvider.update: Error updating DOI {pid.pid_value}: {type(e).__name__}: {str(e)}",
                 exc_info=e,
             )
             return False
