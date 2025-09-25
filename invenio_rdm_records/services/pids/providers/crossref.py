@@ -277,14 +277,21 @@ class CrossrefPIDProvider(PIDProvider):
         try:
             # register parent record
             if isinstance(record, ChainObject):
+                # Workaround to ensure parent DOI (suffix generated automatically)
+                # uses the same prefix as child DOI as Crossref PID provider supports multiple prefixes.
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
+                doi = f"{child_prefix}/{parent_suffix}"
+                meta = record._child
+                meta.pids["doi"]["identifier"] = doi
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata}"
+                    f"CrossrefPIDProvider.register: pid {doi} for parent {record._parent.id}"
                 )
-                doc = self.serializer.dump_obj(record._parent)
+                doc = self.serializer.dump_obj(meta)
             # register record
             else:
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id} and pids {record.pids}"
+                    f"CrossrefPIDProvider.register: pid {pid.pid_value} for record {record.id}"
                 )
                 doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
@@ -306,14 +313,21 @@ class CrossrefPIDProvider(PIDProvider):
         try:
             # update parent record
             if isinstance(record, ChainObject):
+                # Workaround to ensure parent DOI (suffix generated automatically)
+                # uses the same prefix as child DOI as Crossref PID provider supports multiple prefixes.
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
+                doi = f"{child_prefix}/{parent_suffix}"
+                meta = record._child
+                meta.pids["doi"]["identifier"] = doi
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for parent {record._parent.id}, pids {record._parent.pids}, metadata {record.parent.metadata}"
+                    f"CrossrefPIDProvider.update: pid {doi} for parent {record._parent.id}"
                 )
-                doc = self.serializer.dump_obj(record._parent)
+                doc = self.serializer.dump_obj(meta)
             # update record
             else:
                 current_app.logger.error(
-                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {record.id} and pids {record.pids}"
+                    f"CrossrefPIDProvider.update: pid {pid.pid_value} for record {record.id}"
                 )
                 doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
