@@ -141,11 +141,11 @@ class PIDManager:
         If the pid is deleted it re-activates it.
         If the pid exists it does not modify it (idempotent).
         """
+        current_app.logger.error(
+            f"Creating pid {identifier} for scheme: {scheme}, provider: {provider_name}, and draft: {draft.id}"
+        )
         provider = self._get_provider(scheme, provider_name)
         pid_attrs = {}
-        current_app.logger.error(
-            f"Creating pid {identifier} for scheme: {scheme} and draft: {draft.id}"
-        )
         if identifier is not None:
             try:
                 pid = provider.get(identifier)

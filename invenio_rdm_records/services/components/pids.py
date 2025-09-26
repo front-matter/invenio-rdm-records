@@ -310,12 +310,6 @@ class ParentPIDsComponent(ServiceComponent):
             pids=current_pids,
             schemes=missing_required_schemes,
         )
-        current_app.logger.error(
-            f"Publishing record {record.id} with PIDs: {record.get('pids', {})}"
-        )
-        current_app.logger.error(
-            f"Publishing parent record {record.parent.id} with PIDs: {pids}"
-        )
         # Reserve all created PIDs and store them on the parent record
         self.service.pids.parent_pid_manager.reserve_all(record.parent, pids)
         record.parent.pids = pids
