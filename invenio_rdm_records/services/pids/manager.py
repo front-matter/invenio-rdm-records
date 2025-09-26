@@ -25,6 +25,9 @@ class PIDManager:
         """Constructor for RecordService."""
         self._providers = providers
         self._required_schemes = required_schemes if required_schemes else []
+        current_app.logger.error(
+            f"Initializing PIDManager with providers: {self._providers}, required_schemes: {self._required_schemes}"
+        )
 
     def _get_provider(self, scheme, provider_name=None):
         """Get a provider."""
