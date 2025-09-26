@@ -260,44 +260,6 @@ class CrossrefPIDProvider(PIDProvider):
         """Checks if the PID can be modified."""
         return not pid.is_registered()
 
-    def _prepare(self, record, pid):
-        """Prepare record for Crossref registration/update.
-
-        :param record: Record or ChainObject to prepare
-        :param pid: PID being processed
-        :returns: prepared_record
-        """
-        if isinstance(record, ChainObject):
-            # Handle parent record with versioning relationships
-            child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
-            parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
-            doi = f"{child_prefix}/{parent_suffix}"
-
-            meta = record._child
-            meta.pids["doi"]["identifier"] = doi
-
-            # Add versioning relationship
-            related_identifiers = meta.metadata.get("related_identifiers", [])
-            related_identifiers.append(
-                {
-                    "relatedIdentifier": record._child.pids["doi"]["identifier"],
-                    "relationType": "HasVersion",
-                    "relatedIdentifierType": "doi",
-                }
-            )
-            meta.metadata["related_identifiers"] = related_identifiers
-
-            current_app.logger.error(
-                f"Processing parent record - PID: {doi}, Parent ID: {record._parent.id}"
-            )
-            return meta
-        else:
-            # Handle regular record
-            current_app.logger.error(
-                f"Processing record - PID: {pid.pid_value}, Record ID: {record.id}"
-            )
-            return record
-
     def register(self, pid, record, **kwargs):
         """Register metadata with the Crossref XML API.
 
@@ -310,8 +272,17 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
-            prepared_record = self._prepare(record, pid)
-            doc = self.serializer.dump_obj(prepared_record)
+            # workaround to fix DOI prefix for parent record
+            if isinstance(record, ChainObject):
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
+                doi = f"{child_prefix}/{parent_suffix}"
+                record._parent.pids["doi"]["identifier"] = doi
+                current_app.logger.error(
+                    f"Processing parent record - PID: {doi}, Parent ID: {record._parent.id}"
+                )
+
+            doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
         except Exception as e:
@@ -329,8 +300,17 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is updated successfully.
         """
         try:
-            prepared_record = self._prepare(record, pid)
-            doc = self.serializer.dump_obj(prepared_record)
+            # workaround to fix DOI prefix for parent record
+            if isinstance(record, ChainObject):
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
+                doi = f"{child_prefix}/{parent_suffix}"
+                record._parent.pids["doi"]["identifier"] = doi
+                current_app.logger.error(
+                    f"Processing parent record - PID: {doi}, Parent ID: {record._parent.id}"
+                )
+
+            doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
         except Exception as e:
