@@ -122,12 +122,12 @@ class PIDsComponent(ServiceComponent):
         pids_data = record.pids or {}  # current pids state
         if "pids" in data:  # there is new input data for PIDs
             # Workaround: if identifier uses external provider and one of the crossref prefixes, make sure provider is set to crossref
-            if data.get("pids", {}).get("doi", {}).get(
-                "provider", ""
-            ) == "external" and data.get("pids", {}).get("doi", {}).get(
-                "identifier", ""
-            ).split("/")[0] in current_app.config.get("CROSSREF_PREFIXES", []):
-                data["pids"]["doi"]["provider"] = "crossref"
+            # if data.get("pids", {}).get("doi", {}).get(
+            #     "provider", ""
+            # ) == "external" and data.get("pids", {}).get("doi", {}).get(
+            #     "identifier", ""
+            # ).split("/")[0] in current_app.config.get("CROSSREF_PREFIXES", []):
+            #     data["pids"]["doi"]["provider"] = "crossref"
             pids_data = data["pids"]
 
         required_schemes = set(self.service.config.pids_required)
