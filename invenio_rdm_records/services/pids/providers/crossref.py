@@ -272,6 +272,13 @@ class CrossrefPIDProvider(PIDProvider):
             return False
 
         try:
+            # workaround to fix DOI prefix for parent record
+            if isinstance(record, ChainObject):
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._child["parent"]["id"]
+                doi = f"{child_prefix}/{parent_suffix}"
+                record._parent.pids["doi"]["identifier"] = doi
+
             doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
@@ -291,11 +298,11 @@ class CrossrefPIDProvider(PIDProvider):
         """
         try:
             # workaround to fix DOI prefix for parent record
-            # if isinstance(record, ChainObject):
-            # child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
-            # parent_suffix = record._parent.pids["doi"]["identifier"].split("/")[1]
-            # doi = f"{child_prefix}/{parent_suffix}"
-            # record._parent.pids["doi"]["identifier"] = doi
+            if isinstance(record, ChainObject):
+                child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
+                parent_suffix = record._child["parent"]["id"]
+                doi = f"{child_prefix}/{parent_suffix}"
+                record._parent.pids["doi"]["identifier"] = doi
 
             doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
