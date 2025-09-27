@@ -49,6 +49,9 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         # Convert the metadata to crossref_xml format
         # Reasons for failing to convert to Crossref XML include missing required metadata
         # and type not supported by Crossref.
+        current_app.logger.error(
+            f"Converting metadata of type {type(record)} to Crossref XML"
+        )
         metadata = Metadata(
             record,
             via="inveniordm",
