@@ -14,18 +14,16 @@ from collections import ChainMap
 from time import time
 
 import requests
-from commonmeta import (
-    validate_prefix,
-)
+from commonmeta import validate_prefix, dig
 from flask import current_app
 from idutils import is_doi
 from invenio_i18n import lazy_gettext as _
-from invenio_pidstore.errors import PIDAlreadyExists, PIDDoesNotExistError
-from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from invenio_pidstore.models import PIDStatus
+from invenio_access.permissions import system_identity
+from invenio_communities.proxies import current_communities_service
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from ....resources.serializers import CrossrefXMLSerializer
-from ....utils import ChainObject
 from .base import PIDProvider
 
 
@@ -82,7 +80,8 @@ class CrossrefClient:
         return True
 
     def generate_doi(self, record, **kwargs):
-        """Generate a DOI.
+        """Generate a DOI. Uses the DOI prefix of the default community custom_field,
+        falling back to the first configured prefix.
 
         :param record: The record for which to generate a DOI.
         :returns: Generated DOI string.
@@ -92,11 +91,34 @@ class CrossrefClient:
             raise RuntimeError("Crossref client credentials not properly configured.")
 
         # Determine prefix to use
-        prefixes = self.cfg("prefixes", [])
-        prefix = str(prefixes[0]) if len(prefixes) > 0 else None
-        current_app.logger.error(
-            f"Generating DOI for record id: {record.id} and record {record} and pids {record.pids} with prefix: {prefix} and kwargs: {kwargs}"
-        )
+        prefixes = self.cfg("prefixes")
+        default_community = dig(record, "settings.communities.default")
+
+        prefix = None
+        if default_community:
+            try:
+                # Fetch community record and get DOI prefix from custom fields
+                community_item = current_communities_service.read(
+                    identity=system_identity, id_=default_community
+                )
+                custom_fields = community_item.data.get("custom_fields", {})
+                community_prefix = custom_fields.get("rs:prefix", None)
+
+                if community_prefix and community_prefix in [str(p) for p in prefixes]:
+                    prefix = str(community_prefix)
+                    current_app.logger.error(
+                        f"Using DOI prefix: {prefix} for community: {default_community}"
+                    )
+                else:
+                    # Fallback to first configured prefix
+                    prefix = str(prefixes[0])
+                    current_app.logger.error(f"Using default DOI prefix: {prefix}")
+
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to fetch community metadata for {default_community}: {type(e).__name__}: {str(e)}"
+                )
+
         if not prefix:
             raise RuntimeError("Invalid DOI prefix configured.")
 
