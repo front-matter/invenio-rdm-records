@@ -93,7 +93,7 @@ class CrossrefClient:
 
         # Determine prefix to use
         prefixes = self.cfg("prefixes")
-        default_community = dig(record, "settings.communities.default")
+        default_community = dig(record, "communities.default")
 
         prefix = None
         if default_community:
