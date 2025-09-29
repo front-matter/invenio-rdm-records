@@ -20,7 +20,7 @@ from idutils import is_doi
 from invenio_i18n import lazy_gettext as _
 from invenio_pidstore.models import PIDStatus
 from invenio_access.permissions import system_identity
-from invenio_communities.proxies import current_communities_service
+from invenio_communities import current_communities
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from ....resources.serializers import CrossrefXMLSerializer
@@ -64,6 +64,7 @@ class CrossrefClient:
             not self.cfg("username")
             or not self.cfg("password")
             or not self.cfg("prefixes")
+            or not len(self.cfg("prefixes")) > 0
         ):
             current_app.logger.error(
                 f"CrossrefClient configuration incomplete: missing credentials or prefixes. "
@@ -97,22 +98,17 @@ class CrossrefClient:
         prefix = None
         if default_community:
             try:
-                # Fetch community record and get DOI prefix from custom fields
-                community_item = current_communities_service.read(
+                # Fetch default community and get DOI prefix custom field
+                community = current_communities.service.read(
                     identity=system_identity, id_=default_community
                 )
-                custom_fields = community_item.data.get("custom_fields", {})
-                community_prefix = custom_fields.get("rs:prefix", None)
+                community_prefix = dig(community.data, "custom_fields.rs:prefix")
 
                 if community_prefix and community_prefix in [str(p) for p in prefixes]:
                     prefix = str(community_prefix)
                     current_app.logger.error(
                         f"Using DOI prefix: {prefix} for community: {default_community}"
                     )
-                else:
-                    # Fallback to first configured prefix
-                    prefix = str(prefixes[0])
-                    current_app.logger.error(f"Using default DOI prefix: {prefix}")
 
             except Exception as e:
                 current_app.logger.warning(
@@ -120,7 +116,9 @@ class CrossrefClient:
                 )
 
         if not prefix:
-            raise RuntimeError("Invalid DOI prefix configured.")
+            # Fallback to first configured prefix
+            prefix = str(prefixes[0])
+            current_app.logger.error(f"Using default DOI prefix: {prefix}")
 
         doi_format = self.cfg("format", "{prefix}/{id}")
 
