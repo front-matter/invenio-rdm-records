@@ -95,7 +95,7 @@ class CrossrefClient:
         prefixes = self.cfg("prefixes", [])
         prefix = str(prefixes[0]) if len(prefixes) > 0 else None
         current_app.logger.error(
-            f"Generating DOI for record id: {record.id} and record {record} and child {record._child.id} with prefix: {prefix} and kwargs: {kwargs}"
+            f"Generating DOI for record id: {record.id} and record {record} and pids {record.pids} with prefix: {prefix} and kwargs: {kwargs}"
         )
         if not prefix:
             raise RuntimeError("Invalid DOI prefix configured.")
