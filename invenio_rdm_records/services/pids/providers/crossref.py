@@ -102,8 +102,11 @@ class CrossrefClient:
                 community = current_communities.service.read(
                     identity=system_identity, id_=default_community
                 )
+                current_app.logger.error(f"Fetching community: {community.data}")
                 community_prefix = dig(community.data, "custom_fields.rs:prefix")
-
+                current_app.logger.error(
+                    f"Using community prefix: {community_prefix} for community: {default_community}"
+                )
                 if community_prefix and community_prefix in [str(p) for p in prefixes]:
                     prefix = str(community_prefix)
                     current_app.logger.error(
