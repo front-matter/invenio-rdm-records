@@ -96,7 +96,7 @@ class CrossrefClient:
         default_community = dig(record, "communities.default")
 
         prefix = None
-        if default_community:
+        if len(prefixes) > 1 and default_community:
             try:
                 # Fetch default community and get DOI prefix custom field
                 community = current_communities.service.read(
