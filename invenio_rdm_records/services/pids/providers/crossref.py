@@ -91,18 +91,14 @@ class CrossrefClient:
         if not self.check_credentials():
             raise RuntimeError("Crossref client credentials not properly configured.")
 
-        if kwargs.get("prefix", None):
-            prefix = kwargs["prefix"]
-        else:
-            prefixes = self.cfg("prefixes", [])
-            prefix = str(prefixes[0]) if len(prefixes) > 0 else None
-
+        # Determine prefix to use
+        prefixes = self.cfg("prefixes", [])
+        prefix = str(prefixes[0]) if len(prefixes) > 0 else None
+        current_app.logger.error(
+            f"Generating DOI for record id: {record.id} and record {record} and child {record._child.id} with prefix: {prefix} and kwargs: {kwargs}"
+        )
         if not prefix:
             raise RuntimeError("Invalid DOI prefix configured.")
-
-        current_app.logger.error(
-            f"Generating DOI for record: {record.id} with prefix: {prefix}"
-        )
 
         doi_format = self.cfg("format", "{prefix}/{id}")
 
@@ -359,16 +355,6 @@ class CrossrefPIDProvider(PIDProvider):
                         "messages": [_("Missing or invalid DOI for registration.")],
                     }
                 )
-
-            # Validate URL
-            # url = record.get("links", {}).get("self_html", None)
-            # if not url or not is_url(url):
-            #     errors.append(
-            #         {
-            #             "field": "links.self_html",
-            #             "messages": [_("Missing or invalid URL for registration.")],
-            #         }
-            #     )
 
             success = errors == []
 
