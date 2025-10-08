@@ -8,8 +8,6 @@
 
 """Crossref Serializers for Invenio RDM Records."""
 
-import logging
-
 from commonmeta import (
     MARSHMALLOW_MAP,
     CrossrefXMLSchema,
@@ -46,7 +44,7 @@ class CrossrefXMLSerializer(MarshmallowSerializer):
         email = current_app.config.get("CROSSREF_EMAIL", None)
         registrant = current_app.config.get("CROSSREF_REGISTRANT", None)
 
-        # Convert the metadata to crossref_xml format
+        # Convert the metadata to crossref_xml format via the commonmeta intermediary format.
         # Reasons for failing to convert to Crossref XML include missing required metadata
         # and type not supported by Crossref.
         metadata = Metadata(

@@ -106,7 +106,10 @@ from invenio_rdm_records.requests.entity_resolvers import (
     EmailResolver,
     RDMRecordServiceResultResolver,
 )
-from invenio_rdm_records.resources.serializers import DataCite43JSONSerializer
+from invenio_rdm_records.resources.serializers import (
+    DataCite43JSONSerializer,
+    CrossrefXMLSerializer,
+)
 from invenio_rdm_records.services.communities.components import (
     CommunityServiceComponents,
 )
@@ -313,6 +316,12 @@ def app_config(app_config, mock_datacite_client, mock_crossref_client):
             "datacite",
             client=mock_datacite_client("datacite", config_prefix="DATACITE"),
             serializer=DataCite43JSONSerializer(schema_context={"is_parent": True}),
+            label=_("Concept DOI"),
+        ),
+        providers.CrossrefPIDProvider(
+            "crossref",
+            client=mock_crossref_client("crossref", config_prefix="CROSSREF"),
+            serializer=CrossrefXMLSerializer(schema_context={"is_parent": True}),
             label=_("Concept DOI"),
         ),
     ]

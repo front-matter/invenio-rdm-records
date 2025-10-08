@@ -105,7 +105,7 @@ class CrossrefClient:
                 community_prefix = dig(community.data, "custom_fields.rs:prefix")
                 if community_prefix and community_prefix in [str(p) for p in prefixes]:
                     prefix = str(community_prefix)
-                    current_app.logger.error(
+                    current_app.logger.debug(
                         f"Using DOI prefix: {prefix} for community: {default_community}"
                     )
 
@@ -301,13 +301,6 @@ class CrossrefPIDProvider(PIDProvider):
         :returns: `True` if is updated successfully.
         """
         try:
-            # workaround to fix DOI prefix for parent record
-            # if isinstance(record, ChainObject):
-            #     child_prefix = record._child.pids["doi"]["identifier"].split("/")[0]
-            #     parent_suffix = record._child["parent"]["id"]
-            #     doi = f"{child_prefix}/{parent_suffix}"
-            #     record._parent.pids["doi"]["identifier"] = doi
-
             doc = self.serializer.dump_obj(record)
             self.client.deposit(doc)
             return True
