@@ -35,7 +35,9 @@ def verify_access_request_token():
         access_request = current_service.access.create_guest_access_request(
             identity=g.identity, token=token
         )
+        current_app.logger.error(f"Created guest access request: {access_request.id}")
     except AccessRequestExistsError as e:
+        current_app.logger.error(f"Access request error: {e}")
         access_request = current_requests_service.read(
             identity=system_identity, id_=e.request_id
         )
