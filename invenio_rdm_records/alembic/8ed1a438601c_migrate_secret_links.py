@@ -7,6 +7,7 @@
 
 """Migrate secret links permission levels."""
 
+import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -18,13 +19,33 @@ depends_on = None
 
 def upgrade():
     """Upgrade database."""
-    # The permission level "read" and "read_files" where renamed to "view"
-    op.execute(
-        "UPDATE rdm_records_secret_links"
-        " SET permission_level='view'"
-        " WHERE permission_level='read' or permission_level='read_files'"
-    )
+    # Check if table exists before updating
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+
+    if "rdm_records_secret_links" in inspector.get_table_names():
+        # The permission level "read" and "read_files" where renamed to "view"
+        op.execute(
+            "UPDATE rdm_records_secret_links"
+            " SET permission_level='view'"
+            " WHERE permission_level='read' or permission_level='read_files'"
+        )
+    else:
+        print("Table 'rdm_records_secret_links' does not exist, skipping migration.")
 
 
 def downgrade():
     """Downgrade database."""
+    # Check if table exists before updating
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+
+    if "rdm_records_secret_links" in inspector.get_table_names():
+        # Reverse the permission level changes
+        op.execute(
+            "UPDATE rdm_records_secret_links"
+            " SET permission_level='read'"
+            " WHERE permission_level='view'"
+        )
+    else:
+        print("Table 'rdm_records_secret_links' does not exist, skipping downgrade.")
