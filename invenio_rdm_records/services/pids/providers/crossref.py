@@ -47,11 +47,14 @@ class CrossrefClient:
         this was a hardcoded False -- which left <prefix>_TEST_MODE with no
         effect at all, and every deposit going to the production system.
 
-        Defaults to False, as the hardcoded value did, so an instance that
-        configures nothing keeps depositing where it deposits today. Note that
-        DataCiteClient defaults the same setting to True.
+        Defaults to True, as DataCiteClient does for the same setting: an
+        instance that has not said which system it deposits to should register
+        nothing real. Registering a DOI is not undoable, so the failure to
+        prefer is a test deposit from a live instance, not a live deposit from
+        one still being set up. Say <prefix>_TEST_MODE = False to deposit for
+        real.
         """
-        return self.cfg("test_mode", False)
+        return self.cfg("test_mode", True)
 
     @property
     def api_url(self):
